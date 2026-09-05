@@ -1,0 +1,94 @@
+<x-layouts.app :title="$exam->title.' - SIPENA'">
+    <section class="card" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div>
+            <h1 style="margin:0;">{{ $exam->title }}</h1>
+            <p style="margin:8px 0;color:#64748b;">
+                {{ $exam->subject->name }} | {{ $exam->teacher->user->name }} | {{ $exam->start_time->format('d M Y H:i') }} - {{ $exam->end_time->format('H:i') }}
+            </p>
+            <p style="margin:0;color:#334155;">Token: <strong>{{ $exam->token }}</strong> | Durasi: <strong>{{ $exam->duration }} menit</strong></p>
+        </div>
+        <div style="display:flex;gap:8px;">
+            <a class="btn btn-secondary" href="{{ route('exams.questions.create', $exam) }}">Tambah Soal</a>
+            <a class="btn btn-secondary" href="{{ route('exams.participants.create', $exam) }}">Tambah Peserta</a>
+        </div>
+    </section>
+
+    <section class="card" style="display:flex;gap:18px;align-items:end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:240px;"><h2 style="margin:0 0 5px;">Token Ujian</h2><p>Guru dapat mengganti token dan membagikannya ketika ujian dimulai.</p></div>
+        <form method="POST" action="{{ route('exams.token.update', $exam) }}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
+            @csrf @method('PATCH')
+            <label style="margin:0;">Token Aktif<input id="teacher-token" name="token" value="{{ $exam->token }}" maxlength="20" required style="text-transform:uppercase;font-weight:800;letter-spacing:2px;"></label>
+            <button type="button" class="btn btn-secondary" id="generate-token">Acak Token</button>
+            <button type="submit" class="btn btn-primary">Simpan Token</button>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <div><h2 style="margin:0;">Impor Bank Soal Excel</h2><p>Gunakan template agar soal dan kunci jawaban terbaca otomatis.</p></div>
+            <a class="btn btn-secondary" href="{{ route('exams.questions.template') }}"><i class="fas fa-file-arrow-down"></i> Download Template</a>
+        </div>
+        <form method="POST" action="{{ route('exams.questions.import', $exam) }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            @csrf
+            <input type="file" name="questions_file" accept=".xlsx,.xls,.csv" required style="flex:1;">
+            <button class="btn btn-primary" type="submit"><i class="fas fa-file-import"></i> Impor Soal</button>
+        </form>
+    </section>
+
+    <section class="grid two">
+        <article class="card table-wrap">
+            <h2 style="margin-top:0;">Bank Soal ({{ $exam->questions->count() }})</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Pertanyaan</th>
+                        <th>Kunci</th>
+                        <th>Bobot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($exam->questions as $question)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $question->question }}</td>
+                            <td>{{ $question->correct_answer }}</td>
+                            <td>{{ $question->score_weight }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4">Belum ada soal.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </article>
+
+        <article class="card table-wrap">
+            <h2 style="margin-top:0;">Peserta ({{ $exam->participants->count() }})</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Siswa</th>
+                        <th>NIS</th>
+                        <th>Mulai</th>
+                        <th>Selesai</th>
+                        <th>Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($exam->participants as $participant)
+                        <tr>
+                            <td>{{ $participant->student->user->name }}</td>
+                            <td>{{ $participant->student->nis }}</td>
+                            <td>{{ $participant->started_at?->format('d M H:i') ?? '-' }}</td>
+                            <td>{{ $participant->finished_at?->format('d M H:i') ?? '-' }}</td>
+                            <td>{{ $participant->score ?? '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5">Belum ada peserta.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </article>
+    </section>
+    <script>document.getElementById('generate-token').addEventListener('click',()=>{document.getElementById('teacher-token').value=Math.random().toString(36).slice(2,8).toUpperCase()});</script>
+</x-layouts.app>
