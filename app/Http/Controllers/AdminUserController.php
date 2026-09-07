@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\NamedRange;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
@@ -24,19 +27,40 @@ class AdminUserController extends Controller
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle("Siswa");
         $sheet->fromArray([
-            ["nama", "username", "nis", "kelas", "password"],
-            [
-                "Yohanes Carlos Ngaga Sara",
-                "yohanes.carlos",
-                "0123456789",
-                "X - 1",
-                "siswa123",
-            ],
+            ["nama", "nisn", "kelas"],
+            ["Yohanes Carlos Ngaga Sara", "0123456789", ""],
         ]);
-        $sheet->getStyle("A1:E1")->getFont()->setBold(true);
-        foreach (range("A", "E") as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
+        $sheet->getStyle("A1:C1")->getFont()->setBold(true);
+        $sheet->getStyle("B:B")->getNumberFormat()->setFormatCode("@");
+
+        $classSheet = $spreadsheet->createSheet();
+        $classSheet->setTitle("Daftar Kelas");
+        $classes = SchoolClass::query()->orderBy("name")->get();
+        foreach ($classes as $i => $class) {
+            $classSheet->setCellValue("A" . ($i + 1), $class->display_name);
+        }
+        $classSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
+
+        if (count($classes) > 0) {
+            $spreadsheet->addNamedRange(new NamedRange("ClassList", $classSheet, "\$A\$1:\$A\$" . count($classes)));
+            $validation = $sheet->getCell("C2")->getDataValidation();
+            $validation->setType(DataValidation::TYPE_LIST);
+            $validation->setErrorStyle(DataValidation::STYLE_STOP);
+            $validation->setAllowBlank(false);
+            $validation->setShowInputMessage(true);
+            $validation->setShowErrorMessage(true);
+            $validation->setErrorTitle("Kelas tidak valid");
+            $validation->setError("Pilih kelas dari daftar yang tersedia di aplikasi.");
+            $validation->setFormula1("=ClassList");
+            for ($row = 2; $row <= 500; $row++) {
+                $sheet->getCell("C{$row}")->setDataValidation(clone $validation);
+            }
+        }
+
+        foreach (["A" => 34, "B" => 16, "C" => 24] as $column => $width) {
+            $sheet->getColumnDimension($column)->setWidth($width);
         }
 
         return response()->streamDownload(function () use ($spreadsheet): void {
@@ -47,95 +71,113 @@ class AdminUserController extends Controller
     public function importStudents(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            "students_file" => [
-                "required",
-                "file",
-                "max:5120",
-                "mimes:xlsx,xls,csv",
-            ],
+            "students_file" => ["required", "file", "max:5120", "mimes:xlsx,xls,csv"],
         ]);
 
         try {
-            $rows = IOFactory::load($validated["students_file"]->getRealPath())
-                ->getActiveSheet()
-                ->toArray();
+            $rows = IOFactory::load($validated["students_file"]->getRealPath())->getActiveSheet()->toArray();
         } catch (Throwable) {
-            return back()->withErrors([
-                "students_file" =>
-                    "File tidak dapat dibaca. Gunakan template Excel My Asssesmen.",
-            ]);
+            return back()->withErrors(["students_file" => "File tidak dapat dibaca. Gunakan template Excel My Asssesmen."]);
+        }
+
+        if (count($rows) < 2) {
+            return back()->withErrors(["students_file" => "File Excel belum memiliki data siswa."]);
+        }
+
+        $header = array_map(fn($v) => strtolower(trim((string)$v)), $rows[0]);
+        $expected = ["nama", "nisn", "kelas"];
+        foreach ($expected as $required) {
+            if (!in_array($required, $header, true)) {
+                return back()->withErrors(["students_file" => "Kolom {$required} wajib ada. Gunakan template terbaru."]);
+            }
+        }
+
+        $map = array_flip($header);
+        $records = [];
+        foreach (array_slice($rows, 1) as $index => $row) {
+            $excelRow = $index + 2;
+            $name = trim((string)($row[$map["nama"]] ?? ""));
+            $nisn = trim((string)($row[$map["nisn"]] ?? ""));
+            $className = trim((string)($row[$map["kelas"]] ?? ""));
+            if ($name === "" && $nisn === "" && $className === "") continue;
+
+            if ($name === "" || !preg_match('/^\d{10}$/', $nisn) || $className === "") {
+                return back()->withErrors(["students_file" => "Baris {$excelRow}: nama, kelas wajib diisi dan NISN harus tepat 10 digit."]);
+            }
+            $class = SchoolClass::query()->get()->first(fn ($item) => $item->display_name === $className || $item->name === $className);
+            if (!$class) return back()->withErrors(["students_file" => "Baris {$excelRow}: kelas '{$className}' tidak ditemukan di aplikasi."]);
+            if (Student::query()->where("nisn", $nisn)->exists()) return back()->withErrors(["students_file" => "Baris {$excelRow}: NISN {$nisn} sudah terdaftar."]);
+            $records[] = compact("name", "nisn", "class");
         }
 
         $created = 0;
-        $skipped = 0;
-        foreach (array_slice($rows, 1) as $row) {
-            [$name, $username, $nis, $className, $password] = array_pad(
-                $row,
-                5,
-                null,
-            );
-            $name = trim((string) $name);
-            $username = strtolower(trim((string) $username));
-            $nis = trim((string) $nis);
-            $className = trim((string) $className);
-            $password = (string) $password;
-
-            if (
-                $name === "" ||
-                $username === "" ||
-                $nis === "" ||
-                $className === "" ||
-                strlen($password) < 6 ||
-                !preg_match('/^[a-z0-9_-]+$/', $username)
-            ) {
-                $skipped++;
-                continue;
-            }
-
-            $class = SchoolClass::query()->where("name", $className)->first();
-            if (
-                !$class ||
-                User::query()->where("username", $username)->exists() ||
-                Student::query()->where("nis", $nis)->exists()
-            ) {
-                $skipped++;
-                continue;
-            }
-
-            DB::transaction(function () use (
-                $name,
-                $username,
-                $nis,
-                $class,
-                $password,
-            ): void {
+        DB::transaction(function () use ($records, &$created): void {
+            foreach ($records as $record) {
+                $username = $record["nisn"];
+                if (User::query()->where("username", $username)->exists()) {
+                    throw new \RuntimeException("Username NISN {$username} sudah digunakan.");
+                }
                 $user = User::query()->create([
-                    "name" => $name,
+                    "name" => $record["name"],
                     "username" => $username,
                     "role" => "student",
-                    "password" => Hash::make($password),
+                    "password" => Hash::make($username),
                 ]);
                 Student::query()->create([
                     "user_id" => $user->id,
-                    "class_id" => $class->id,
-                    "nis" => $nis,
+                    "class_id" => $record["class"]->id,
+                    "nisn" => $record["nisn"],
                 ]);
-            });
-            $created++;
+                $created++;
+            }
+        });
+
+        AuditLogger::log($request->user(), "student.imported", Student::class, null, ["created" => $created]);
+        return back()->with("status", "{$created} siswa berhasil diimpor. Username dan password awal menggunakan NISN.");
+    }
+
+    public function teacherTemplate(): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ["nama", "nip", "subject"],
+            ["Yohanes Carlos", "198001012010011001", "Matematika"],
+        ]);
+        $sheet->getStyle("A1:C1")->getFont()->setBold(true);
+        $sheet->getStyle("B:B")->getNumberFormat()->setFormatCode("@");
+        foreach (["A" => 34, "B" => 20, "C" => 28] as $column => $width) $sheet->getColumnDimension($column)->setWidth($width);
+        return response()->streamDownload(function () use ($spreadsheet): void {
+            (new Xlsx($spreadsheet))->save("php://output");
+        }, "template-import-guru-my_asssesmen.xlsx");
+    }
+
+    public function importTeachers(Request $request): RedirectResponse
+    {
+        $validated = $request->validate(["teachers_file" => ["required", "file", "max:5120", "mimes:xlsx,xls,csv"]]);
+        try {
+            $rows = IOFactory::load($validated["teachers_file"]->getRealPath())->getActiveSheet()->toArray();
+        } catch (Throwable) {
+            return back()->withErrors(["teachers_file" => "File tidak dapat dibaca. Gunakan template Excel My Asssesmen."]);
         }
-
-        AuditLogger::log(
-            $request->user(),
-            "student.imported",
-            Student::class,
-            null,
-            ["created" => $created, "skipped" => $skipped],
-        );
-
-        return back()->with(
-            "status",
-            "$created siswa berhasil diimpor. $skipped baris dilewati.",
-        );
+        if (count($rows) < 2) return back()->withErrors(["teachers_file" => "File Excel belum memiliki data guru."]);
+        $header = array_map(fn($v) => strtolower(trim((string)$v)), $rows[0]);
+        foreach (["nama", "nip", "subject"] as $required) if (!in_array($required, $header, true)) return back()->withErrors(["teachers_file" => "Kolom {$required} wajib ada. Gunakan template terbaru."]);
+        $map = array_flip($header); $records=[]; $reserved=[];
+        foreach (array_slice($rows,1) as $index=>$row) {
+            $excelRow=$index+2; $name=trim((string)($row[$map["nama"]]??"")); $nip=trim((string)($row[$map["nip"]]??"")); $subject=trim((string)($row[$map["subject"]]??""));
+            if ($name==="" && $nip==="" && $subject==="") continue;
+            if ($name==="") return back()->withErrors(["teachers_file"=>"Baris {$excelRow}: nama wajib diisi."]);
+            if ($nip!=="" && !preg_match('/^\d{18}$/',$nip)) return back()->withErrors(["teachers_file"=>"Baris {$excelRow}: NIP harus tepat 18 digit jika diisi."]);
+            if ($nip!=="" && Teacher::query()->where("nip",$nip)->exists()) return back()->withErrors(["teachers_file"=>"Baris {$excelRow}: NIP {$nip} sudah terdaftar."]);
+            $first=preg_replace('/[^a-z0-9]/','',Str::lower(Str::before(trim($name),' '))); $first=$first?:'guru';
+            $username=$first; $n=1; while(User::query()->where("username",$username)->exists() || in_array($username,$reserved,true)){ $n++; $username=$first.$n; } $reserved[]=$username;
+            $records[]=compact("name","nip","subject","username");
+        }
+        $created=0;
+        DB::transaction(function() use($records,&$created):void{ foreach($records as $r){ $password=$r["nip"]!==""?$r["nip"]:$r["username"]; $user=User::query()->create(["name"=>$r["name"],"username"=>$r["username"],"role"=>"teacher","password"=>Hash::make($password)]); Teacher::query()->create(["user_id"=>$user->id,"nip"=>$r["nip"]?:null,"subject"=>$r["subject"]?:null]); $created++; }});
+        AuditLogger::log($request->user(),"teacher.imported",Teacher::class,null,["created"=>$created]);
+        return back()->with("status","{$created} guru berhasil diimpor. Password awal menggunakan NIP jika tersedia, jika tidak menggunakan username.");
     }
 
     public function teachers(): View
@@ -293,7 +335,7 @@ class AdminUserController extends Controller
             ],
             "password" => ["required", "string", "min:6"],
             "class_id" => ["required", "exists:classes,id"],
-            "nis" => ["required", "string", "max:30", "unique:students,nis"],
+            "nisn" => ["required", "digits:10", "unique:students,nisn"],
         ]);
 
         $user = User::query()->create([
@@ -306,7 +348,7 @@ class AdminUserController extends Controller
         $student = Student::query()->create([
             "user_id" => $user->id,
             "class_id" => (int) $validated["class_id"],
-            "nis" => $validated["nis"],
+            "nisn" => $validated["nisn"],
         ]);
 
         AuditLogger::log(
@@ -334,11 +376,10 @@ class AdminUserController extends Controller
                 "unique:users,username," . $student->user_id,
             ],
             "class_id" => ["required", "exists:classes,id"],
-            "nis" => [
+            "nisn" => [
                 "required",
-                "string",
-                "max:30",
-                "unique:students,nis," . $student->id,
+                "digits:10",
+                "unique:students,nisn," . $student->id,
             ],
         ]);
 
@@ -349,7 +390,7 @@ class AdminUserController extends Controller
 
         $student->update([
             "class_id" => (int) $validated["class_id"],
-            "nis" => $validated["nis"],
+            "nisn" => $validated["nisn"],
         ]);
 
         AuditLogger::log(
@@ -404,73 +445,5 @@ class AdminUserController extends Controller
         return back()->with("status", "Akun siswa berhasil dihapus.");
     }
 
-    public function generateStudents(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            "class_id" => ["required", "exists:classes,id"],
-            "prefix" => ["required", "string", "max:12", "alpha_dash"],
-            "start_number" => ["required", "integer", "min:1"],
-            "count" => ["required", "integer", "min:1", "max:300"],
-            "default_password" => ["required", "string", "min:6"],
-            "nis_prefix" => ["required", "string", "max:12", "alpha_dash"],
-        ]);
 
-        $classId = (int) $validated["class_id"];
-        $created = 0;
-        $number = (int) $validated["start_number"];
-        $target = (int) $validated["count"];
-
-        DB::transaction(function () use (
-            $validated,
-            $classId,
-            &$created,
-            &$number,
-            $target,
-        ): void {
-            while ($created < $target) {
-                $suffix = str_pad((string) $number, 4, "0", STR_PAD_LEFT);
-                $username = strtolower($validated["prefix"]) . $suffix;
-                $nis = strtoupper($validated["nis_prefix"]) . $suffix;
-                $number++;
-
-                if (
-                    User::query()->where("username", $username)->exists() ||
-                    Student::query()->where("nis", $nis)->exists()
-                ) {
-                    continue;
-                }
-
-                $user = User::query()->create([
-                    "name" => "Siswa " . $suffix,
-                    "username" => $username,
-                    "role" => "student",
-                    "password" => Hash::make($validated["default_password"]),
-                ]);
-
-                Student::query()->create([
-                    "user_id" => $user->id,
-                    "class_id" => $classId,
-                    "nis" => $nis,
-                ]);
-
-                $created++;
-            }
-        });
-
-        AuditLogger::log(
-            $request->user(),
-            "student.bulk_generated",
-            Student::class,
-            null,
-            [
-                "class_id" => $classId,
-                "count" => $created,
-            ],
-        );
-
-        return back()->with(
-            "status",
-            $created . " akun siswa berhasil digenerate.",
-        );
-    }
 }

@@ -88,7 +88,7 @@ class ExamFlowTest extends TestCase
         $student = Student::query()->create([
             "user_id" => $studentUser->id,
             "class_id" => $class->id,
-            "nis" => "NIS-001",
+            "nisn" => "2026000001",
         ]);
 
         $participant = ExamParticipant::query()->create([
@@ -140,7 +140,7 @@ class ExamFlowTest extends TestCase
         $student = Student::query()->create([
             "user_id" => $studentUser->id,
             "class_id" => $class->id,
-            "nis" => "10001",
+            "nisn" => "2026000002",
         ]);
         $participant = ExamParticipant::query()->create([
             "exam_id" => $exam->id,

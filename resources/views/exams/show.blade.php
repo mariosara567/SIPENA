@@ -13,14 +13,9 @@
         </div>
     </section>
 
-    <section class="card" style="display:flex;gap:18px;align-items:end;flex-wrap:wrap;">
-        <div style="flex:1;min-width:240px;"><h2 style="margin:0 0 5px;">Token Ujian</h2><p>Guru dapat mengganti token dan membagikannya ketika ujian dimulai.</p></div>
-        <form method="POST" action="{{ route('exams.token.update', $exam) }}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
-            @csrf @method('PATCH')
-            <label style="margin:0;">Token Aktif<input id="teacher-token" name="token" value="{{ $exam->token }}" maxlength="20" required style="text-transform:uppercase;font-weight:800;letter-spacing:2px;"></label>
-            <button type="button" class="btn btn-secondary" id="generate-token">Acak Token</button>
-            <button type="submit" class="btn btn-primary">Simpan Token</button>
-        </form>
+    <section class="card" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+        <div style="flex:1;min-width:240px;"><h2 style="margin:0 0 5px;">Token Ujian</h2><p style="margin:0;color:#64748b;">Token 5 karakter dibuat otomatis oleh sistem dan menggunakan huruf besar.</p></div>
+        <div style="padding:14px 20px;border:2px dashed var(--primary);border-radius:10px;font-size:24px;font-weight:900;letter-spacing:5px;color:var(--primary);">{{ $exam->token }}</div>
     </section>
 
     <section class="card">
@@ -51,7 +46,7 @@
                     @forelse ($exam->questions as $question)
                         <tr>
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $question->question }}</td>
+                            <td>{{ $question->question }} @if($question->image_path)<br><img src="{{ asset('storage/'.$question->image_path) }}" alt="Gambar soal" style="max-width:180px;max-height:100px;object-fit:contain;margin-top:8px;border-radius:8px;">@endif</td>
                             <td>{{ $question->correct_answer }}</td>
                             <td>{{ $question->score_weight }}</td>
                         </tr>
@@ -78,7 +73,7 @@
                     @forelse ($exam->participants as $participant)
                         <tr>
                             <td>{{ $participant->student->user->name }}</td>
-                            <td>{{ $participant->student->nis }}</td>
+                            <td>{{ $participant->student->nisn }}</td>
                             <td>{{ $participant->started_at?->format('d M H:i') ?? '-' }}</td>
                             <td>{{ $participant->finished_at?->format('d M H:i') ?? '-' }}</td>
                             <td>{{ $participant->score ?? '-' }}</td>
@@ -90,5 +85,4 @@
             </table>
         </article>
     </section>
-    <script>document.getElementById('generate-token').addEventListener('click',()=>{document.getElementById('teacher-token').value=Math.random().toString(36).slice(2,8).toUpperCase()});</script>
 </x-layouts.app>

@@ -5,8 +5,8 @@
             @csrf
             <label>Nama<input name="name" required></label>
             <label>Username<input name="username" required></label>
-            <label>NIP<input name="nip" required></label>
-            <label>Mata Pelajaran<input name="subject" required></label>
+            <label>NIP<input name="nip" inputmode="numeric" pattern="\d{18}" maxlength="18" placeholder="Opsional, 18 digit"></label>
+            <label>Mata Pelajaran<input name="subject" placeholder="Opsional"></label>
             <label>Password Awal<input name="password" required></label>
             <div style="display:flex;align-items:end;"><button class="btn btn-primary" type="submit">Simpan
                     Guru</button></div>

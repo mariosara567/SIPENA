@@ -1,7 +1,7 @@
 <x-layouts.app :title="'Buat Ujian - My Asssesmen'">
     <section class="card">
         <h1 style="margin:0 0 8px;">Buat Ujian Baru</h1>
-        <p style="margin:0;color:#64748b;">Atur mapel, jadwal, durasi, token, dan status ujian.</p>
+        <p style="margin:0;color:#64748b;">Atur mapel, jadwal, durasi, dan status ujian. Token dibuat otomatis oleh sistem.</p>
     </section>
 
     <section class="card">
@@ -43,10 +43,6 @@
 
             <label>Selesai Ujian
                 <input type="datetime-local" id="exam_end_time" name="end_time" value="{{ old('end_time') }}" required>
-            </label>
-
-            <label>Token Ujian
-                <input name="token" value="{{ old('token') }}" required>
             </label>
 
             <label>Status

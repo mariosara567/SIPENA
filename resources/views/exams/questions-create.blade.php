@@ -7,9 +7,13 @@
     </section>
 
     <section class="card">
-        <form method="POST" action="{{ route('exams.questions.store', $exam) }}" class="grid">
+        <form method="POST" action="{{ route('exams.questions.store', $exam) }}" class="grid" enctype="multipart/form-data">
             @csrf
             <label style="font-size:15px;">Pertanyaan<textarea name="question" placeholder="Tulis pertanyaan..." style="font-size:16px;min-height:150px;" required>{{ old('question') }}</textarea></label>
+            <label>Gambar Soal (opsional)
+                <input type="file" name="image" accept="image/jpeg,image/png,image/webp">
+                <small style="color:#64748b;">JPG, PNG, atau WebP. Maksimal 2 MB.</small>
+            </label>
             <div style="display:grid;gap:12px;">
                 @foreach (['A','B','C','D','E'] as $option)
                     <label style="display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:center;margin:0;">

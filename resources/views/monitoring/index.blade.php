@@ -35,7 +35,7 @@
             <tbody>
             @forelse($activeParticipants as $participant)
                 <tr>
-                    <td><strong>{{ $participant->student->user->name }}</strong><br><small>{{ $participant->student->nis }} · {{ $participant->student->schoolClass?->display_name }}</small></td>
+                    <td><strong>{{ $participant->student->user->name }}</strong><br><small>{{ $participant->student->nisn }} · {{ $participant->student->schoolClass?->display_name }}</small></td>
                     <td>{{ $participant->exam->subject->name }}<br><small>{{ $participant->exam->title }}</small></td>
                     <td>{{ $participant->started_at?->format('H:i:s') }}</td>
                     <td><strong style="color:{{ $participant->violation_count ? '#dc2626' : '#16a34a' }}">{{ $participant->violation_count }} kali</strong><br><small>{{ $participant->locked_reason }}</small></td>

@@ -33,7 +33,7 @@
             @forelse($rows as $row)
                 <tr>
                     <td>{{ $row->student_name }}</td>
-                    <td>{{ $row->nis }}</td>
+                    <td>{{ $row->nisn }}</td>
                     <td>{{ $row->class_name }}</td>
                     <td>{{ $row->subject_name }}</td>
                     <td>{{ $row->exam_title }}</td>

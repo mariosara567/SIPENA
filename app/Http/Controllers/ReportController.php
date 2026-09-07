@@ -45,7 +45,7 @@ class ReportController extends Controller
             foreach ($rows as $row) {
                 fputcsv($stream, [
                     $row->student_name,
-                    $row->nis,
+                    $row->nisn,
                     $row->class_name,
                     $row->subject_name,
                     $row->exam_title,
@@ -89,7 +89,7 @@ class ReportController extends Controller
                 exam_participants.started_at,
                 exam_participants.finished_at,
                 users.name as student_name,
-                students.nis,
+                students.nisn,
                 CONCAT(classes.name, COALESCE(CONCAT(' (', classes.year, ')'), '')) as class_name,
                 subjects.name as subject_name,
                 exams.title as exam_title

@@ -10,6 +10,7 @@ use App\Http\Controllers\ParticipantManagementController;
 use App\Http\Controllers\QuestionManagementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentExamController;
+use App\Http\Controllers\TeacherProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get("/", function () {
@@ -42,12 +43,7 @@ Route::middleware("auth")->group(function () {
             ExamManagementController::class,
             "show",
         ])->name("exams.show");
-        Route::patch("/exams/{exam}/token", [
-            ExamManagementController::class,
-            "updateToken",
-        ])->name("exams.token.update");
-
-        Route::get("/exams/{exam}/questions/create", [
+Route::get("/exams/{exam}/questions/create", [
             QuestionManagementController::class,
             "create",
         ])->name("exams.questions.create");
@@ -132,6 +128,14 @@ Route::middleware("auth")->group(function () {
             AdminUserController::class,
             "storeTeacher",
         ])->name("admin.teachers.store");
+        Route::get("/admin/teachers/template", [
+            AdminUserController::class,
+            "teacherTemplate",
+        ])->name("admin.teachers.template");
+        Route::post("/admin/teachers/import", [
+            AdminUserController::class,
+            "importTeachers",
+        ])->name("admin.teachers.import");
         Route::put("/admin/teachers/{teacher}", [
             AdminUserController::class,
             "updateTeacher",
@@ -165,11 +169,7 @@ Route::middleware("auth")->group(function () {
             AdminUserController::class,
             "destroyStudent",
         ])->name("admin.students.destroy");
-        Route::post("/admin/students/generate", [
-            AdminUserController::class,
-            "generateStudents",
-        ])->name("admin.students.generate");
-        Route::get("/admin/students/template", [
+Route::get("/admin/students/template", [
             AdminUserController::class,
             "studentTemplate",
         ])->name("admin.students.template");
@@ -178,6 +178,11 @@ Route::middleware("auth")->group(function () {
             "importStudents",
         ])->name("admin.students.import");
 
+    });
+
+    Route::middleware("role:teacher")->group(function () {
+        Route::get("/profile", [TeacherProfileController::class, "edit"])->name("teacher.profile.edit");
+        Route::put("/profile", [TeacherProfileController::class, "update"])->name("teacher.profile.update");
     });
 
     Route::middleware("role:student")->group(function () {

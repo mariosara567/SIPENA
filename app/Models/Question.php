@@ -14,6 +14,7 @@ class Question extends Model
     protected $fillable = [
         'exam_id',
         'question',
+        'image_path',
         'option_a',
         'option_b',
         'option_c',

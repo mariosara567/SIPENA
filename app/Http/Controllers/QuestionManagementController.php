@@ -8,6 +8,7 @@ use App\Support\AuditLogger;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -59,6 +60,7 @@ class QuestionManagementController extends Controller
 
         $validated = $request->validate([
             "question" => ["required", "string"],
+            "image" => ["nullable", "image", "mimes:jpg,jpeg,png,webp", "max:2048"],
             "option_a" => ["required", "string"],
             "option_b" => ["required", "string"],
             "option_c" => ["required", "string"],
@@ -73,6 +75,7 @@ class QuestionManagementController extends Controller
 
         $question = $exam->questions()->create([
             "question" => $validated["question"],
+            "image_path" => $request->hasFile("image") ? $request->file("image")->store("questions", "public") : null,
             "option_a" => $validated["option_a"],
             "option_b" => $validated["option_b"],
             "option_c" => $validated["option_c"],

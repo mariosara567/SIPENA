@@ -53,7 +53,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => $studentUser->id,
         ], [
             'class_id' => $class->id,
-            'nis' => '20260001',
+            'nisn' => '2026000001',
         ]);
 
         Subject::query()->firstOrCreate([

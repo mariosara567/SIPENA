@@ -14,7 +14,7 @@ class Student extends Model
     protected $fillable = [
         'user_id',
         'class_id',
-        'nis',
+        'nisn',
     ];
 
     public function user(): BelongsTo

@@ -728,6 +728,9 @@
             <div class="sidebar-section" style="margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 24px;">
                 <div class="sidebar-section-title">Akun</div>
                 <ul class="sidebar-nav">
+                    @if(auth()->user()->role === 'teacher')
+                        <li><a href="{{ route('teacher.profile.edit') }}"><i class="fas fa-user-cog"></i> Profil Saya</a></li>
+                    @endif
                     <li>
                         <form method="POST" action="{{ route('logout') }}" style="width: 100%;">
                             @csrf

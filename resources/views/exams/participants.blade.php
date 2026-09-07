@@ -40,7 +40,7 @@
                             <tr>
                                 <td><input type="checkbox" name="student_ids[]" value="{{ $student->id }}"></td>
                                 <td>{{ $student->user->name }}</td>
-                                <td>{{ $student->nis }}</td>
+                                <td>{{ $student->nisn }}</td>
                                 <td>{{ $student->schoolClass->display_name }}</td>
                             </tr>
                         @empty

@@ -59,7 +59,6 @@ class ExamManagementController extends Controller
             "start_time" => ["required", "date"],
             "end_time" => ["required", "date", "after:start_time"],
             "duration" => ["nullable", "integer", "min:1", "max:600"],
-            "token" => ["required", "string", "max:20"],
             "status" => [
                 "required",
                 Rule::in(["draft", "scheduled", "active", "closed"]),
@@ -87,7 +86,7 @@ class ExamManagementController extends Controller
             "start_time" => $validated["start_time"],
             "end_time" => $validated["end_time"],
             "duration" => $duration,
-            "token" => strtoupper(trim($validated["token"])),
+            "token" => $this->generateToken(),
             "status" => $validated["status"],
             "question_count" => 0,
         ]);
@@ -127,22 +126,13 @@ class ExamManagementController extends Controller
         ]);
     }
 
-    public function updateToken(Request $request, Exam $exam): RedirectResponse
+    private function generateToken(): string
     {
-        $this->ensureCanManageExam($request, $exam);
-        $validated = $request->validate([
-            "token" => ["required", "string", "min:4", "max:20", "alpha_num"],
-        ]);
+        do {
+            $token = strtoupper(\Illuminate\Support\Str::random(5));
+        } while (Exam::query()->where("token", $token)->exists());
 
-        $exam->update(["token" => strtoupper($validated["token"])]);
-        AuditLogger::log(
-            $request->user(),
-            "exam.token_updated",
-            Exam::class,
-            $exam->id,
-        );
-
-        return back()->with("status", "Token ujian berhasil diperbarui.");
+        return $token;
     }
 
     private function ensureCanManageExam(Request $request, Exam $exam): void

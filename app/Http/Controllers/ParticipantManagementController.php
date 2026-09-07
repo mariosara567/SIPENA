@@ -17,7 +17,7 @@ class ParticipantManagementController extends Controller
         $this->ensureCanManageExam($request, $exam);
 
         $selectedClassId = $request->query('class_id');
-        $studentsQuery = Student::query()->with(['user', 'schoolClass'])->orderBy('nis');
+        $studentsQuery = Student::query()->with(['user', 'schoolClass'])->orderBy('nisn');
 
         if ($selectedClassId) {
             $studentsQuery->where('class_id', $selectedClassId);

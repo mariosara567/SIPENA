@@ -1,4 +1,4 @@
-<x-layouts.app :title="$exam->title.' - My Asssesmen'">
+<x-layouts.student :title="$exam->title.' - My Asssesmen'">
     <style>
         .exam-question{display:none}.exam-question.active{display:block}.exam-option{display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:2px solid var(--border);border-radius:10px;cursor:pointer;margin-bottom:10px;background:var(--surface)}.exam-option:hover{border-color:var(--primary)}.exam-option:has(input:checked){border-color:var(--primary);background:rgba(15,118,110,.08)}.exam-option input{width:20px;min-height:20px;margin-top:1px}.option-letter{width:28px;height:28px;flex:0 0 28px;border:2px solid var(--border);border-radius:7px;display:grid;place-items:center;font-weight:800;color:var(--primary)}.exam-option:has(input:checked) .option-letter{background:var(--primary);border-color:var(--primary);color:#fff}.exam-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.exam-modal-layer{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;align-items:center;justify-content:center;padding:20px}.exam-modal-layer.open{display:flex}.exam-modal{width:min(680px,100%);background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden}.exam-modal-header{padding:18px 22px;background:var(--primary);color:#fff;display:flex;justify-content:space-between;font-weight:800}.exam-modal-body{padding:22px}.question-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:9px}.question-jump{min-height:50px;border:2px solid var(--border);border-radius:8px;background:#fff;font-weight:700;cursor:pointer}.question-jump.answered{background:var(--primary);border-color:var(--primary);color:#fff}.question-jump.doubted{background:#fbbf24;border-color:#f59e0b;color:#422006}.close-modal{border:0;background:none;color:inherit;font-size:20px;cursor:pointer}.confirm-actions{display:flex;gap:10px}.confirm-actions>*{flex:1}@media(max-width:700px){.question-grid{grid-template-columns:repeat(5,1fr)}.exam-actions .btn{padding:0 12px}}
     </style>
@@ -27,7 +27,10 @@
                     <span style="color:var(--text-muted);">{{ $loop->iteration }} dari {{ $exam->questions->count() }}</span>
                 </div>
                 <h2 style="font-size:18px;margin-bottom:12px;">Perhatikan pertanyaan berikut!</h2>
-                <div class="question-text" style="font-size:16px;line-height:1.7;white-space:pre-line;margin-bottom:24px;">{{ $question->question }}</div>
+                <div class="question-text" style="font-size:16px;line-height:1.7;white-space:pre-line;margin-bottom:18px;">{{ $question->question }}</div>
+                @if($question->image_path)
+                    <div style="margin-bottom:22px;text-align:center;"><img src="{{ asset('storage/'.$question->image_path) }}" alt="Gambar soal" style="max-width:100%;max-height:360px;object-fit:contain;border-radius:10px;border:1px solid var(--border);"></div>
+                @endif
                 @foreach(['A','B','C','D','E'] as $option)
                     @php($content = $question->{'option_'.strtolower($option)} ?? null)
                     @if($content)
@@ -97,4 +100,4 @@
         window.addEventListener('offline',()=>setSaveStatus('⚠ Koneksi internet terputus'));
         document.addEventListener('visibilitychange',async()=>{if(document.hidden&&examActive&&!reporting){reporting=true;try{await fetch(@json(route('student.exams.violation',$participant)),{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'},body:JSON.stringify({reason:'Meninggalkan halaman ujian / membuka tab lain'})});document.getElementById('lock-modal').classList.add('open')}finally{reporting=false}}});
     </script>
-</x-layouts.app>
+</x-layouts.student>
