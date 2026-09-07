@@ -1,8 +1,8 @@
-<x-layouts.app :title="'Akun Siswa - SIPENA'">
+<x-layouts.app :title="'Akun Siswa - My Asssesmen'">
     <section class="card" style="display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
         <div>
             <h1 style="margin:0 0 6px;">Impor Data Siswa</h1>
-            <p>Tambahkan banyak akun sekaligus. Nama kelas pada Excel harus sama dengan data kelas di SIPENA.</p>
+            <p>Tambahkan banyak akun sekaligus. Nama kelas pada Excel harus sama dengan data kelas di My Asssesmen.</p>
         </div>
         <a class="btn btn-secondary" href="{{ route('admin.students.template') }}"><i class="fas fa-file-arrow-down"></i> Download Template Excel</a>
         <form method="POST" action="{{ route('admin.students.import') }}" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex:1 1 100%;">

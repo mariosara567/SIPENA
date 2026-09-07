@@ -10,7 +10,6 @@ use App\Http\Controllers\ParticipantManagementController;
 use App\Http\Controllers\QuestionManagementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentExamController;
-use App\Http\Controllers\SyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::get("/", function () {
@@ -179,12 +178,6 @@ Route::middleware("auth")->group(function () {
             "importStudents",
         ])->name("admin.students.import");
 
-        Route::get("/sync", [SyncController::class, "index"])->name(
-            "sync.index",
-        );
-        Route::post("/sync/run", [SyncController::class, "run"])->name(
-            "sync.run",
-        );
     });
 
     Route::middleware("role:student")->group(function () {

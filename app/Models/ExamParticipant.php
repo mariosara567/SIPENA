@@ -21,7 +21,6 @@ class ExamParticipant extends Model
         "locked_reason",
         "locked_at",
         "score",
-        "sync_status",
     ];
 
     protected function casts(): array

@@ -41,7 +41,7 @@ class AdminUserController extends Controller
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save("php://output");
-        }, "template-import-siswa-sipena.xlsx");
+        }, "template-import-siswa-my_asssesmen.xlsx");
     }
 
     public function importStudents(Request $request): RedirectResponse
@@ -62,7 +62,7 @@ class AdminUserController extends Controller
         } catch (Throwable) {
             return back()->withErrors([
                 "students_file" =>
-                    "File tidak dapat dibaca. Gunakan template Excel SIPENA.",
+                    "File tidak dapat dibaca. Gunakan template Excel My Asssesmen.",
             ]);
         }
 

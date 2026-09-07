@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Tambah Soal - SIPENA'">
+<x-layouts.app :title="'Tambah Soal - My Asssesmen'">
     <section class="card" style="border-top:7px solid var(--primary);">
         <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;">
             <div><h1 style="margin:0 0 8px;">Form Soal & Jawaban</h1><p style="margin:0;color:#64748b;">Ujian: {{ $exam->title }} — isi seperti membuat pertanyaan di Google Form.</p></div>

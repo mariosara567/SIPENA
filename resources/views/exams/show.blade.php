@@ -1,4 +1,4 @@
-<x-layouts.app :title="$exam->title.' - SIPENA'">
+<x-layouts.app :title="$exam->title.' - My Asssesmen'">
     <section class="card" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
         <div>
             <h1 style="margin:0;">{{ $exam->title }}</h1>

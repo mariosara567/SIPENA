@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Laporan Nilai - SIPENA'">
+<x-layouts.app :title="'Laporan Nilai - My Asssesmen'">
     <section class="card">
         <h2 style="margin-top:0;">Filter Laporan</h2>
         <form method="GET" action="{{ route('reports.index') }}" class="grid two">

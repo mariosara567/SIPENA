@@ -35,10 +35,4 @@ return [
         ],
     ],
 
-    'sipena_central' => [
-        'base_url' => env('SIPENA_CENTRAL_BASE_URL'),
-        'token' => env('SIPENA_CENTRAL_TOKEN'),
-        'school_code' => env('SIPENA_SCHOOL_CODE', 'SCH-LOCAL'),
-    ],
-
 ];

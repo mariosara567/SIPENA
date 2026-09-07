@@ -61,7 +61,6 @@ class ParticipantManagementController extends Controller
             $exam->participants()->firstOrCreate([
                 'student_id' => $studentId,
             ], [
-                'sync_status' => 'pending',
             ]);
         }
 

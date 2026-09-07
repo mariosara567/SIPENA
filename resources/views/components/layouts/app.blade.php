@@ -1,4 +1,4 @@
-@props(['title' => 'SIPENA'])
+@props(['title' => 'My Asssesmen'])
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -649,7 +649,7 @@
     <aside class="sidebar">
         <a class="sidebar-brand" href="{{ route('dashboard') }}">
             <span class="mark">S</span>
-            <span>SIPENA</span>
+            <span>My Asssesmen</span>
         </a>
 
         <nav>
@@ -720,9 +720,6 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('sync.index') }}" class="{{ request()->routeIs('sync.*') ? 'active' : '' }}">
-                                <i class="fas fa-sync-alt"></i> Sinkronisasi
-                            </a>
                         </li>
                     </ul>
                 </div>

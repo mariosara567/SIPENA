@@ -1,6 +1,6 @@
-# SIPENA
+# My Asssesmen
 
-SIPENA (Sistem Penilaian dan Ujian Nasional Akademik) adalah aplikasi ujian sekolah berbasis web dengan pendekatan offline first. Aplikasi berjalan di server lokal sekolah melalui LAN/WiFi sehingga siswa tetap dapat mengikuti ujian tanpa internet. Saat koneksi tersedia, hasil ujian dapat disinkronkan ke server pusat.
+My Asssesmen (Sistem Penilaian dan Ujian Nasional Akademik) adalah aplikasi ujian sekolah berbasis web dengan pendekatan online-first. Seluruh pengguna mengakses satu server aplikasi melalui internet, sementara data ujian dan jawaban disimpan langsung pada database utama.
 
 ## Stack
 
@@ -11,7 +11,7 @@ SIPENA (Sistem Penilaian dan Ujian Nasional Akademik) adalah aplikasi ujian seko
 
 ## Role Pengguna
 
-- Administrator: mengelola guru, siswa, kelas, mata pelajaran, sesi ujian, monitoring, sinkronisasi, dan laporan.
+- Administrator: mengelola guru, siswa, kelas, mata pelajaran, sesi ujian, monitoring, dan laporan.
 - Guru: mengelola bank soal, paket ujian, peserta, sesi, hasil ujian, dan rekap nilai.
 - Siswa: login, memasukkan token, mengikuti ujian, dan melihat hasil jika diaktifkan.
 
@@ -21,7 +21,7 @@ SIPENA (Sistem Penilaian dan Ujian Nasional Akademik) adalah aplikasi ujian seko
 - Bank soal pilihan ganda dengan opsi A sampai E, kunci jawaban, bobot, dan import Excel.
 - Manajemen ujian dengan jadwal, durasi, token, peserta, dan jumlah soal.
 - Pelaksanaan ujian dengan timer, validasi token, auto save, navigasi soal, dan auto submit.
-- Penilaian otomatis, monitoring real time, laporan PDF/Excel, dan sinkronisasi hasil.
+- Penilaian otomatis, monitoring real time, laporan PDF/Excel, dan autosave jawaban ke server.
 
 ## Menjalankan Lokal
 
@@ -32,7 +32,7 @@ SIPENA (Sistem Penilaian dan Ujian Nasional Akademik) adalah aplikasi ujian seko
 5. Jalankan `php artisan migrate --seed`.
 6. Jalankan `npm install` lalu `npm run dev`.
 7. Jalankan `php artisan serve`.
-8. Jalankan worker queue untuk sinkronisasi: `php artisan queue:work`.
+8. Jika menggunakan queue untuk proses asinkron, jalankan worker: `php artisan queue:work`.
 
 Admin awal:
 
@@ -53,8 +53,7 @@ Akun demo tambahan:
 - Admin: kelola kelas/mapel, kelola akun guru/siswa, reset password, generate akun siswa massal.
 - Monitoring ujian real-time (online, sedang berjalan, selesai, progress per ujian).
 - Laporan nilai dengan filter kelas/mapel dan export CSV (Excel-compatible).
-- Sinkronisasi hasil ujian ke server pusat via queue job + retry + log sinkronisasi.
-- Audit log aktivitas penting (auth, master data, ujian, sinkronisasi).
+- Audit log aktivitas penting (auth, master data, ujian, penilaian, dan aktivitas siswa).
 
 ## Endpoint modul utama
 
@@ -65,16 +64,4 @@ Akun demo tambahan:
 - `/my-exams` - halaman ujian siswa
 - `/monitoring` - monitoring ujian
 - `/reports` - laporan nilai
-- `/sync` - sinkronisasi data ke server pusat
 
-## Konfigurasi sinkronisasi pusat
-
-Tambahkan variabel berikut di `.env` server sekolah:
-
-- `SIPENA_CENTRAL_BASE_URL=https://domain-server-pusat`
-- `SIPENA_CENTRAL_TOKEN=token-rahasia`
-- `SIPENA_SCHOOL_CODE=kode-sekolah`
-
-Sinkronisasi manual:
-
-- `php artisan sipena:sync-exam-results`

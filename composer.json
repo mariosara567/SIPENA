@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "sipena/offline-exam",
+    "name": "my_asssesmen/offline-exam",
     "type": "project",
-    "description": "SIPENA offline-first school exam platform.",
-    "keywords": ["laravel", "exam", "offline-first", "school"],
+    "description": "My Asssesmen online-first school assessment platform.",
+    "keywords": ["laravel", "exam", "school"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

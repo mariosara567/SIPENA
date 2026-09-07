@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Monitoring Ujian - SIPENA'">
+<x-layouts.app :title="'Monitoring Ujian - My Asssesmen'">
     <section class="grid two">
         <article class="card"><h3 style="margin:0;">Peserta Terdaftar</h3><p style="font-size:28px;margin:8px 0 0;">{{ $total }}</p></article>
         <article class="card"><h3 style="margin:0;">Peserta Online</h3><p style="font-size:28px;margin:8px 0 0;">{{ $online }}</p></article>

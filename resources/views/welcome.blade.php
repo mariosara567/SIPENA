@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SIPENA - Sistem Informasi Pendidikan Nasional</title>
+    <title>My Asssesmen - Sistem Asesmen Pendidikan</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -454,7 +454,7 @@
     <nav>
         <a href="{{ route('home') }}" class="brand">
             <span class="brand-mark">S</span>
-            <span>SIPENA</span>
+            <span>My Asssesmen</span>
         </a>
         <div class="nav-links">
             <a href="#features" class="nav-link">Fitur</a>
@@ -478,8 +478,8 @@
         <!-- Hero Section -->
         <section class="hero">
             <div class="hero-content">
-                <h1>Sistem Informasi Pendidikan Nasional</h1>
-                <p>Platform terpadu untuk manajemen ujian, monitoring hasil akademik, dan sinkronisasi data pendidikan dalam satu dashboard yang intuitif dan mudah digunakan.</p>
+                <h1>Sistem Asesmen Pendidikan</h1>
+                <p>Platform terpadu untuk manajemen ujian, monitoring hasil akademik, dan penilaian digital dalam satu dashboard yang intuitif dan mudah digunakan.</p>
                 <div class="hero-buttons">
                     @if (Route::has('login'))
                         @auth
@@ -540,10 +540,10 @@
 
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i class="fas fa-sync-alt"></i>
+                        <i class="fas fa-cloud"></i>
                     </div>
-                    <h3>Sinkronisasi Data</h3>
-                    <p>Sinkronisasi otomatis dengan sistem pusat untuk integrasi data yang sempurna.</p>
+                    <h3>Online Terpusat</h3>
+                    <p>Seluruh data ujian tersimpan langsung pada server utama dan dapat diakses dari mana saja.</p>
                 </div>
 
                 <div class="feature-card">
@@ -589,7 +589,7 @@
         <!-- CTA Section -->
         <section class="cta" id="about">
             <h2>Siap untuk Memulai?</h2>
-            <p>Bergabunglah dengan ribuan institusi pendidikan yang telah mempercayai SIPENA.</p>
+            <p>Bergabunglah dengan ribuan institusi pendidikan yang telah mempercayai My Asssesmen.</p>
             @if (Route::has('login'))
                 @auth
                     <a href="{{ route('dashboard') }}" class="btn btn-primary" style="display: inline-flex; background: white; color: var(--primary);">
@@ -606,7 +606,7 @@
 
     <!-- Footer -->
     <footer>
-        <p>&copy; 2026 SIPENA - Sistem Informasi Pendidikan Nasional. Semua hak dilindungi.</p>
+        <p>&copy; 2026 My Asssesmen - Sistem Asesmen Pendidikan. Semua hak dilindungi.</p>
     </footer>
 </body>
 </html>

@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Buat Ujian - SIPENA'">
+<x-layouts.app :title="'Buat Ujian - My Asssesmen'">
     <section class="card">
         <h1 style="margin:0 0 8px;">Buat Ujian Baru</h1>
         <p style="margin:0;color:#64748b;">Atur mapel, jadwal, durasi, token, dan status ujian.</p>

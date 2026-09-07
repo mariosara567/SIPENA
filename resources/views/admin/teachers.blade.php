@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Akun Guru - SIPENA'">
+<x-layouts.app :title="'Akun Guru - My Asssesmen'">
     <section class="card">
         <h2 style="margin-top:0;">Tambah Guru</h2>
         <form method="POST" action="{{ route('admin.teachers.store') }}" class="grid two">

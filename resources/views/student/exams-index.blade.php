@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Ujian Saya - SIPENA'">
+<x-layouts.app :title="'Ujian Saya - My Asssesmen'">
     <section class="card" style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;">
         <div>
             <h1 style="margin:0 0 8px;">Portal Ujian Siswa</h1>

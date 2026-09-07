@@ -41,7 +41,7 @@ class QuestionManagementController extends Controller
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save("php://output");
-        }, "template-bank-soal-sipena.xlsx");
+        }, "template-bank-soal-my_asssesmen.xlsx");
     }
 
     public function create(Request $request, Exam $exam): View

@@ -43,7 +43,6 @@ return new class extends Migration
             $table->dateTime('started_at')->nullable();
             $table->dateTime('finished_at')->nullable();
             $table->decimal('score', 8, 2)->unsigned()->nullable();
-            $table->string('sync_status')->default('pending')->index();
             $table->timestamps();
             $table->unique(['exam_id', 'student_id']);
         });

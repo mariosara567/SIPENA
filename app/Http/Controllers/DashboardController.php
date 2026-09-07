@@ -19,7 +19,7 @@ class DashboardController extends Controller
             "administrator" => [
                 "title" => "Dashboard Administrator",
                 "subtitle" =>
-                    "Kelola data sekolah, akun pengguna, sesi ujian, monitoring, laporan, dan sinkronisasi.",
+                    "Kelola data sekolah, akun pengguna, sesi ujian, monitoring, dan laporan.",
                 "items" => [
                     [
                         "name" => "Data Akademik",
@@ -30,7 +30,6 @@ class DashboardController extends Controller
                     ["name" => "Manajemen Ujian", "route" => "exams.index"],
                     ["name" => "Monitoring", "route" => "monitoring.index"],
                     ["name" => "Laporan Nilai", "route" => "reports.index"],
-                    ["name" => "Sinkronisasi", "route" => "sync.index"],
                 ],
             ],
             "teacher" => [

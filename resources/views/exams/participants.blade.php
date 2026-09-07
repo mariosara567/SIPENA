@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Tambah Peserta - SIPENA'">
+<x-layouts.app :title="'Tambah Peserta - My Asssesmen'">
     <section class="card">
         <h1 style="margin:0 0 8px;">Tambah Peserta Ujian</h1>
         <p style="margin:0;color:#64748b;">Ujian: {{ $exam->title }}</p>

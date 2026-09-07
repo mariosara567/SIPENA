@@ -322,7 +322,6 @@ class StudentExamController extends Controller
         $participant->update([
             "finished_at" => $finishedAt,
             "score" => $score,
-            "sync_status" => "pending",
         ]);
     }
 }

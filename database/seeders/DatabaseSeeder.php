@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
         User::query()->firstOrCreate([
             'username' => 'admin',
         ], [
-            'name' => 'Administrator SIPENA',
+            'name' => 'Administrator My Asssesmen',
             'role' => 'administrator',
             'password' => Hash::make('password'),
         ]);

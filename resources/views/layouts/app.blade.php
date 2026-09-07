@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'SIPENA' }}</title>
+    <title>{{ $title ?? 'My Asssesmen' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
@@ -460,7 +460,7 @@
     <aside class="sidebar">
         <a class="sidebar-brand" href="{{ route('dashboard') }}">
             <span class="mark">S</span>
-            <span>SIPENA</span>
+            <span>My Asssesmen</span>
         </a>
 
         <nav>
@@ -531,9 +531,6 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('sync.index') }}" class="{{ request()->routeIs('sync.*') ? 'active' : '' }}">
-                                <i class="fas fa-sync-alt"></i> Sinkronisasi
-                            </a>
                         </li>
                     </ul>
                 </div>
@@ -560,7 +557,7 @@
     <!-- Top Bar -->
     <header class="topbar">
         <div class="topbar-left">
-            <h1 style="margin: 0; font-size: 18px; color: var(--text);">{{ $title ?? 'SIPENA' }}</h1>
+            <h1 style="margin: 0; font-size: 18px; color: var(--text);">{{ $title ?? 'My Asssesmen' }}</h1>
         </div>
         <div class="topbar-right">
             <div class="user-menu">

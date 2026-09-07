@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Masuk - SIPENA</title>
+    <title>Masuk - My Asssesmen</title>
     <style>
         :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #eef5f4; color: #102033; }
         * { box-sizing: border-box; }
@@ -34,11 +34,11 @@
     <main class="login">
         <section class="intro">
             <div>
-                <div class="brand"><div class="mark">S</div><span>SIPENA</span></div>
+                <div class="brand"><div class="mark">M</div><span>My Asssesmen</span></div>
                 <h1>Masuk ke server ujian lokal.</h1>
                 <p>Gunakan akun yang dibuat administrator sekolah. Seluruh sesi berjalan di jaringan lokal, jadi siswa tidak membutuhkan koneksi internet.</p>
             </div>
-            <div class="hint">Mode: {{ $role ? ucfirst($role) : 'Pengguna SIPENA' }}</div>
+            <div class="hint">Mode: {{ $role ? ucfirst($role) : 'Pengguna My Asssesmen' }}</div>
         </section>
 
         <section class="form">

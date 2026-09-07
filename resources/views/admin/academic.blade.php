@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Data Akademik - SIPENA'">
+<x-layouts.app :title="'Data Akademik - My Asssesmen'">
     <section class="grid two">
         <article class="card">
             <h2 style="margin-top:0;">Kelas</h2>
