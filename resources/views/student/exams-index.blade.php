@@ -16,6 +16,8 @@
         @php($isUpcoming = !$participant->finished_at && $now->lt($exam->start_time))
         @php($isLive = !$participant->finished_at && $now->gte($exam->start_time) && $now->lt($exam->end_time))
         @php($isExpired = !$participant->finished_at && $now->gte($exam->end_time))
+        @php($isLate = $isLive && $participant->started_at && $participant->started_at->gt($exam->start_time))
+        @php($lateMinutes = $isLate ? $exam->start_time->diffInMinutes($participant->started_at) : 0)
         @php($status = $participant->finished_at ? 'Selesai' : ($participant->is_locked ? 'Terkunci' : ($isLive && $participant->started_at ? 'Sedang Berjalan' : ($isLive ? 'Sedang Berlangsung' : ($isUpcoming ? 'Belum Dimulai' : 'Jadwal Berakhir')))))
         <article class="card" style="border-top:5px solid {{ $participant->finished_at ? 'var(--success)' : ($isLive ? 'var(--primary)' : 'var(--border)') }};">
             <div style="display:flex;justify-content:space-between;gap:15px;align-items:flex-start;flex-wrap:wrap;">
@@ -38,6 +40,9 @@
             @elseif($isExpired)
                 <div class="alert error"><i class="fas fa-calendar-xmark"></i> Jadwal ujian sudah berakhir pada {{ $exam->end_time->format('d M Y, H:i') }} WIB.</div>
             @else
+                @if($isLate)
+                    <div class="alert" style="background:#fff7ed;color:#9a3412;"><i class="fas fa-person-walking-luggage"></i> Anda masuk terlambat sekitar <strong>{{ $lateMinutes }} menit</strong>. Waktu tetap mengikuti batas akhir ujian.</div>
+                @endif
                 <div style="margin-top:18px;padding:16px;border:2px solid var(--border);border-radius:10px;background:var(--bg);">
                     <strong><i class="fas fa-shield-halved" style="color:var(--primary);"></i> Peraturan Ujian</strong>
                     <ul style="margin:8px 0 0 20px;color:var(--muted);font-size:13px;line-height:1.7;"><li>Membuka tab/jendela lain akan mengunci sesi.</li><li>Jawaban tersimpan otomatis.</li><li>Gunakan token yang diberikan guru/pengawas.</li></ul>

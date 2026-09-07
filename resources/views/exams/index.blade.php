@@ -33,7 +33,11 @@
                         <td><strong style="letter-spacing:1px;color:var(--primary);">{{ $exam->token }}</strong></td>
                         <td>{{ $exam->questions_count }}</td>
                         <td>{{ $exam->participants_count }}</td>
-                        <td><a class="btn btn-secondary" href="{{ route('exams.show', $exam) }}">Detail</a></td>
+                        <td style="display:flex;gap:6px;flex-wrap:wrap;">
+<a class="btn btn-secondary" href="{{ route('exams.show', $exam) }}">Detail</a>
+<a class="btn btn-secondary" href="{{ route('exams.edit', $exam) }}">Edit</a>
+<form method="POST" action="{{ route('exams.destroy',$exam) }}" onsubmit="return confirm('Hapus ujian ini?')">@csrf @method('DELETE')<button class="btn" style="background:#fee2e2;color:#b91c1c;">Hapus</button></form>
+</td>
                     </tr>
                 @empty
                     <tr><td colspan="9">Belum ada data ujian.</td></tr>

@@ -43,6 +43,18 @@ Route::middleware("auth")->group(function () {
             ExamManagementController::class,
             "show",
         ])->name("exams.show");
+        Route::get("/exams/{exam}/edit", [
+            ExamManagementController::class,
+            "edit",
+        ])->name("exams.edit");
+        Route::put("/exams/{exam}", [
+            ExamManagementController::class,
+            "update",
+        ])->name("exams.update");
+        Route::delete("/exams/{exam}", [
+            ExamManagementController::class,
+            "destroy",
+        ])->name("exams.destroy");
 Route::get("/exams/{exam}/questions/create", [
             QuestionManagementController::class,
             "create",
@@ -51,6 +63,18 @@ Route::get("/exams/{exam}/questions/create", [
             QuestionManagementController::class,
             "store",
         ])->name("exams.questions.store");
+        Route::get("/exams/{exam}/questions/{question}/edit", [
+            QuestionManagementController::class,
+            "edit",
+        ])->name("exams.questions.edit");
+        Route::put("/exams/{exam}/questions/{question}", [
+            QuestionManagementController::class,
+            "update",
+        ])->name("exams.questions.update");
+        Route::delete("/exams/{exam}/questions/{question}", [
+            QuestionManagementController::class,
+            "destroy",
+        ])->name("exams.questions.destroy");
 
         Route::get("/exams/{exam}/participants", [
             ParticipantManagementController::class,

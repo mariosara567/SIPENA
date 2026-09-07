@@ -6,48 +6,16 @@
 
     <!-- Stats Cards -->
     <div class="stats-grid">
-        <div class="stat-card primary">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-value">
-                    <span class="stat-number">{{ $module['items'][0]['count'] ?? 0 }}</span>
-                </div>
-                <p class="stat-label">{{ $module['items'][0]['name'] ?? 'Item' }}</p>
-                <p class="stat-description">Total data</p>
-            </div>
-        </div>
-
-        @if (isset($module['items'][1]))
-            <div class="stat-card success">
-                <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                </div>
+        @foreach(array_slice($module['items'], 0, 4) as $index => $item)
+            <div class="stat-card {{ ['primary','success','warning','primary'][$index] ?? 'primary' }}">
+                <div class="stat-icon"><i class="{{ $item['icon'] ?? 'fas fa-chart-simple' }}"></i></div>
                 <div class="stat-content">
-                    <div class="stat-value">
-                        <span class="stat-number">{{ $module['items'][1]['count'] ?? 0 }}</span>
-                    </div>
-                    <p class="stat-label">{{ $module['items'][1]['name'] ?? 'Item' }}</p>
-                    <p class="stat-description">Aktif/Berhasil</p>
+                    <div class="stat-value"><span class="stat-number">{{ $item['count'] ?? 0 }}</span></div>
+                    <p class="stat-label">{{ $item['name'] ?? 'Item' }}</p>
+                    <p class="stat-description">{{ $item['description'] ?? 'Total data' }}</p>
                 </div>
             </div>
-        @endif
-
-        @if (isset($module['items'][2]))
-            <div class="stat-card warning">
-                <div class="stat-icon">
-                    <i class="fas fa-exclamation-circle"></i>
-                </div>
-                <div class="stat-content">
-                    <div class="stat-value">
-                        <span class="stat-number">{{ $module['items'][2]['count'] ?? 0 }}</span>
-                    </div>
-                    <p class="stat-label">{{ $module['items'][2]['name'] ?? 'Item' }}</p>
-                    <p class="stat-description">Pending/Belum</p>
-                </div>
-            </div>
-        @endif
+        @endforeach
     </div>
 
     <!-- Module Cards -->

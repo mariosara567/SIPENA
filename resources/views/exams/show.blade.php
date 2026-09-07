@@ -7,7 +7,8 @@
             </p>
             <p style="margin:0;color:#334155;">Token: <strong>{{ $exam->token }}</strong> | Durasi: <strong>{{ $exam->duration }} menit</strong></p>
         </div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a class="btn btn-secondary" href="{{ route('exams.edit', $exam) }}">Edit Ujian</a>
             <a class="btn btn-secondary" href="{{ route('exams.questions.create', $exam) }}">Tambah Soal</a>
             <a class="btn btn-secondary" href="{{ route('exams.participants.create', $exam) }}">Tambah Peserta</a>
         </div>
@@ -40,6 +41,7 @@
                         <th>Pertanyaan</th>
                         <th>Kunci</th>
                         <th>Bobot</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,9 +51,13 @@
                             <td>{{ $question->question }} @if($question->image_path)<br><img src="{{ asset('storage/'.$question->image_path) }}" alt="Gambar soal" style="max-width:180px;max-height:100px;object-fit:contain;margin-top:8px;border-radius:8px;">@endif</td>
                             <td>{{ $question->correct_answer }}</td>
                             <td>{{ $question->score_weight }}</td>
+                            <td style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <a class="btn btn-secondary" href="{{ route('exams.questions.edit',[$exam,$question]) }}">Edit</a>
+                                <form method="POST" action="{{ route('exams.questions.destroy',[$exam,$question]) }}" onsubmit="return confirm('Hapus soal ini?')">@csrf @method('DELETE')<button class="btn" style="background:#fee2e2;color:#b91c1c;">Hapus</button></form>
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4">Belum ada soal.</td></tr>
+                        <tr><td colspan="5">Belum ada soal.</td></tr>
                     @endforelse
                 </tbody>
             </table>
