@@ -1,18 +1,108 @@
 <x-layouts.app :title="'Edit Soal - My Asssesmen'">
-<section class="card"><h1 style="margin:0 0 8px;">Edit Soal</h1><p style="color:#64748b;">Ujian: {{ $exam->title }}</p></section>
-<section class="card">
-<form method="POST" action="{{ route('exams.questions.update',[$exam,$question]) }}" class="grid" enctype="multipart/form-data">
-@csrf @method('PUT')
-<label>Pertanyaan<textarea name="question" required style="min-height:150px;">{{ old('question',$question->question) }}</textarea></label>
-@if($question->image_path)
-<div><p style="font-weight:700;font-size:13px;">Gambar saat ini</p><img src="{{ asset('storage/'.$question->image_path) }}" style="max-width:320px;max-height:200px;border-radius:10px;margin-top:8px;"></div>
-<label style="display:flex;align-items:center;gap:8px;font-weight:600;"><input type="checkbox" name="remove_image" value="1" style="width:auto;"> Hapus gambar</label>
-@endif
-<label>Ganti / Tambah Gambar (opsional)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG, WebP maksimal 2 MB.</small></label>
-<div style="display:grid;gap:12px;">@foreach(['A','B','C','D','E'] as $option)
-<label style="display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:center;"><input type="radio" name="correct_answer" value="{{ $option }}" @checked(old('correct_answer',$question->correct_answer)===$option) style="width:22px;"><input name="option_{{ strtolower($option) }}" value="{{ old('option_'.strtolower($option),$question->{'option_'.strtolower($option)}) }}" placeholder="Pilihan {{ $option }}" @required($option!=='E')></label>
-@endforeach</div>
-<label>Bobot Nilai<input type="number" min="0.1" step="0.1" name="score_weight" value="{{ old('score_weight',$question->score_weight) }}" required></label>
-<div style="display:flex;gap:10px;"><button class="btn btn-primary">Simpan Perubahan</button><a class="btn btn-secondary" href="{{ route('exams.show',$exam) }}">Batal</a></div>
-</form>
-</section></x-layouts.app>
+    <a href="{{ route('exams.show', $exam) }}" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:#64748b; font-weight:600; font-size:15px; margin-bottom:16px; transition:color 0.2s;">
+        <span style="display:flex; align-items:center; justify-content:center; width:24px; height:24px; background:var(--primary); color:white; border-radius:50%; font-size:12px;">
+            <i class="fas fa-arrow-left"></i>
+        </span>
+        Kembali ke Detail Ujian
+    </a>
+
+    {{-- Header --}}
+    <div class="gform-card">
+        <div class="gform-card-header">
+            <h2><i class="fas fa-pen-to-square" style="margin-right:8px;"></i> Edit Soal</h2>
+            <p>{{ $exam->title }} — {{ $exam->subject->name ?? '' }}</p>
+        </div>
+    </div>
+
+    {{-- Question Form Card --}}
+    <div class="gform-card active">
+        <div class="gform-card-body">
+            <form method="POST" action="{{ route('exams.questions.update', [$exam, $question]) }}" enctype="multipart/form-data">
+                @csrf @method('PUT')
+
+                {{-- Question Text --}}
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:13px; margin-bottom:6px;">Pertanyaan</label>
+                    <textarea name="question" placeholder="Ketik butir pertanyaan di sini..." style="font-size:16px; min-height:120px; border:none; border-bottom:3px solid var(--primary); border-radius:0; padding:12px 4px; resize:vertical;" required>{{ old('question', $question->question) }}</textarea>
+                </div>
+
+                {{-- Current Image --}}
+                @if($question->image_path)
+                    <div style="margin-bottom:16px; padding:16px; background:var(--bg); border-radius:10px; border:1px solid var(--border);">
+                        <p style="font-weight:700; font-size:13px; margin-bottom:8px; color:var(--text);">Gambar Saat Ini</p>
+                        <img src="{{ asset('storage/'.$question->image_path) }}" style="max-width:300px; max-height:180px; border-radius:8px; border:2px solid var(--border); object-fit:contain;">
+                        <label style="display:flex; align-items:center; gap:8px; font-weight:600; margin-top:10px; color:var(--danger); font-size:13px; cursor:pointer;">
+                            <input type="checkbox" name="remove_image" value="1" style="width:auto; min-height:auto;">
+                            <i class="fas fa-trash-alt"></i> Hapus gambar
+                        </label>
+                    </div>
+                @endif
+
+                {{-- Image Upload --}}
+                <div style="margin-bottom:20px; padding:16px; background:var(--bg); border-radius:10px; border:1px solid var(--border);">
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <label style="margin:0; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px; color:var(--primary); font-weight:600;">
+                            <i class="fas fa-image"></i> {{ $question->image_path ? 'Ganti Gambar' : 'Unggah Gambar/Rumus' }} (opsional)
+                            <input type="file" name="image" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewImage(this)">
+                        </label>
+                        <small style="color:#94a3b8; font-size:12px;">JPG, PNG, WebP. Maks 2 MB.</small>
+                    </div>
+                    <div id="imagePreview" style="display:none; margin-top:12px;">
+                        <img id="previewImg" src="" alt="Preview" style="max-width:300px; max-height:180px; border-radius:8px; border:2px solid var(--border); object-fit:contain;">
+                    </div>
+                </div>
+
+                {{-- Answer Options --}}
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:13px; margin-bottom:10px;">Pilihan Jawaban</label>
+                    <div style="display:grid; gap:4px;">
+                        @foreach (['A','B','C','D','E'] as $option)
+                            <div class="gform-option">
+                                <input type="radio" name="correct_answer" value="{{ $option }}" @checked(old('correct_answer', $question->correct_answer) === $option)>
+                                <div class="opt-label">{{ $option }}</div>
+                                <input type="text" name="option_{{ strtolower($option) }}" value="{{ old('option_'.strtolower($option), $question->{'option_'.strtolower($option)}) }}" placeholder="Pilihan {{ $option }}{{ $option === 'E' ? ' (opsional)' : '' }}" @required($option !== 'E')>
+                            </div>
+                        @endforeach
+                    </div>
+                    <small style="color:#64748b; margin-top:8px; display:block; font-size:12px;">
+                        <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+                        Klik tombol radio di kiri untuk menentukan kunci jawaban benar.
+                    </small>
+                </div>
+
+                {{-- Score Weight --}}
+                <div style="margin-bottom:24px; max-width:200px;">
+                    <label style="font-size:13px;">Bobot Nilai</label>
+                    <input type="number" min="0.1" step="0.1" name="score_weight" value="{{ old('score_weight', $question->score_weight) }}" required>
+                </div>
+
+                {{-- Action Buttons --}}
+                <div style="display:flex; gap:10px; padding-top:20px; border-top:2px solid var(--border);">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-save"></i> Simpan Perubahan
+                    </button>
+                    <a class="btn btn-secondary" href="{{ route('exams.show', $exam) }}">
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const img = document.getElementById('previewImg');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+    </script>
+</x-layouts.app>

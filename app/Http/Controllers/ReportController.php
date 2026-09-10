@@ -2,118 +2,190 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exam;
 use App\Models\ExamParticipant;
-use App\Models\SchoolClass;
-use App\Models\Subject;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpFoundation\Response;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class ReportController extends Controller
 {
     public function index(Request $request): View
     {
-        $classId = $request->integer('class_id');
-        $subjectId = $request->integer('subject_id');
+        $user = $request->user();
+        
+        $examQuery = Exam::query()
+            ->with(["subject", "teacher.user", "classes"])
+            ->latest();
+            
+        if ($user->isTeacher()) {
+            $examQuery->where("teacher_id", $user->teacher?->id ?? 0);
+        }
 
-        $rows = $this->buildQuery($request, $classId, $subjectId)->get();
+        $exams = $examQuery->get();
 
         return view('reports.index', [
-            'rows' => $rows,
-            'classes' => SchoolClass::query()->orderBy('name')->get(),
-            'subjects' => Subject::query()->orderBy('name')->get(),
-            'classId' => $classId,
-            'subjectId' => $subjectId,
+            'exams' => $exams,
         ]);
     }
 
-    public function export(Request $request): StreamedResponse
+    public function show(Request $request, Exam $exam): View
     {
-        $classId = $request->integer('class_id');
-        $subjectId = $request->integer('subject_id');
+        $user = $request->user();
+        abort_unless(
+            $user->isAdministrator() || ($user->isTeacher() && $exam->teacher_id === $user->teacher?->id),
+            403
+        );
 
-        $rows = $this->buildQuery($request, $classId, $subjectId)->get();
+        $exam->load(['subject', 'classes']);
 
-        $filename = 'laporan-nilai-'.now()->format('Ymd-His').'.csv';
+        // All exams for the horizontal slider
+        $examQuery = Exam::query()
+            ->with(["subject", "classes"])
+            ->latest();
+        if ($user->isTeacher()) {
+            $examQuery->where("teacher_id", $user->teacher?->id ?? 0);
+        }
+        $allExams = $examQuery->get();
 
-        return response()->streamDownload(function () use ($rows): void {
-            $stream = fopen('php://output', 'wb');
-            fputcsv($stream, ['Nama Siswa', 'NIS', 'Kelas', 'Mata Pelajaran', 'Ujian', 'Nilai', 'Mulai', 'Selesai']);
+        // Get participants for this exam who have finished
+        $participants = ExamParticipant::query()
+            ->where('exam_id', $exam->id)
+            ->whereNotNull('finished_at')
+            ->with(['student.user'])
+            ->orderBy('score', 'desc')
+            ->get();
 
-            foreach ($rows as $row) {
-                fputcsv($stream, [
-                    $row->student_name,
-                    $row->nisn,
-                    $row->class_name,
-                    $row->subject_name,
-                    $row->exam_title,
-                    $row->score,
-                    $row->started_at?->format('Y-m-d H:i:s'),
-                    $row->finished_at?->format('Y-m-d H:i:s'),
-                ]);
+        $total = $participants->count();
+
+        // Calculate stats
+        $stats = [
+            'sangat_baik' => ['count' => 0, 'percent' => 0],
+            'baik' => ['count' => 0, 'percent' => 0],
+            'cukup' => ['count' => 0, 'percent' => 0],
+            'kurang' => ['count' => 0, 'percent' => 0],
+        ];
+
+        foreach ($participants as $p) {
+            $score = $p->score;
+            if ($score >= 93) {
+                $stats['sangat_baik']['count']++;
+            } elseif ($score >= 85) {
+                $stats['baik']['count']++;
+            } elseif ($score >= 76) {
+                $stats['cukup']['count']++;
+            } else {
+                $stats['kurang']['count']++;
             }
+        }
 
-            fclose($stream);
+        if ($total > 0) {
+            foreach ($stats as $key => $data) {
+                $stats[$key]['percent'] = round(($data['count'] / $total) * 100, 2);
+            }
+        }
+
+        return view('reports.show', compact('exam', 'allExams', 'participants', 'stats', 'total'));
+    }
+
+    public function exportExcel(Request $request, Exam $exam): StreamedResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->isAdministrator() || ($user->isTeacher() && $exam->teacher_id === $user->teacher?->id),
+            403
+        );
+
+        $exam->load(['subject', 'classes']);
+        
+        $participants = ExamParticipant::query()
+            ->where('exam_id', $exam->id)
+            ->whereNotNull('finished_at')
+            ->with(['student.user'])
+            ->orderBy('score', 'desc')
+            ->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Laporan Nilai Ujian');
+
+        // Styles
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '0F766E'] // Primary color
+            ],
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN]
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ];
+
+        $borderStyle = [
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN]
+            ],
+        ];
+
+        // Title
+        $sheet->setCellValue('A1', 'DAFTAR NILAI UJIAN');
+        $sheet->mergeCells('A1:E1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->setCellValue('A3', 'Mata Pelajaran:');
+        $sheet->setCellValue('B3', $exam->subject->name);
+        $sheet->setCellValue('A4', 'Ujian:');
+        $sheet->setCellValue('B4', $exam->title);
+        $sheet->setCellValue('A5', 'Kelas:');
+        $sheet->setCellValue('B5', $exam->classes->pluck('display_name')->join(', '));
+        
+        // Headers
+        $headers = ['NO', 'NAMA MURID', 'NISN', 'KELAS', 'NILAI UJIAN'];
+        $col = 'A';
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . '7', $header);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+        $sheet->getStyle('A7:E7')->applyFromArray($headerStyle);
+
+        // Data
+        $row = 8;
+        $no = 1;
+        foreach ($participants as $participant) {
+            $sheet->setCellValue('A' . $row, $no);
+            $sheet->setCellValue('B' . $row, $participant->student->user->name);
+            $sheet->setCellValue('C' . $row, $participant->student->nisn . ' '); // Add space so excel treats as string
+            $sheet->setCellValue('D' . $row, $participant->student->schoolClass?->display_name);
+            $sheet->setCellValue('E' . $row, $participant->score);
+            
+            $sheet->getStyle('A' . $row . ':E' . $row)->applyFromArray($borderStyle);
+            $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('D' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('E' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            
+            $row++;
+            $no++;
+        }
+
+        $filename = 'Nilai_Ujian_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $exam->title) . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
         }, $filename, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
-    }
-
-    public function exportPdf(Request $request): Response
-    {
-        $classId = $request->integer('class_id');
-        $subjectId = $request->integer('subject_id');
-        $rows = $this->buildQuery($request, $classId, $subjectId)->get();
-
-        $selectedClass = $classId > 0 ? SchoolClass::query()->find($classId)?->name : 'Semua kelas';
-        $selectedSubject = $subjectId > 0 ? Subject::query()->find($subjectId)?->name : 'Semua mata pelajaran';
-
-        $pdf = Pdf::loadView('reports.pdf', [
-            'rows' => $rows,
-            'selectedClass' => $selectedClass ?? 'Semua kelas',
-            'selectedSubject' => $selectedSubject ?? 'Semua mata pelajaran',
-            'generatedAt' => now(),
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download('laporan-nilai-'.now()->format('Ymd-His').'.pdf');
-    }
-
-    private function buildQuery(Request $request, int $classId = 0, int $subjectId = 0)
-    {
-        $query = ExamParticipant::query()
-            ->selectRaw("
-                exam_participants.id,
-                exam_participants.score,
-                exam_participants.started_at,
-                exam_participants.finished_at,
-                users.name as student_name,
-                students.nisn,
-                CONCAT(classes.name, COALESCE(CONCAT(' (', classes.year, ')'), '')) as class_name,
-                subjects.name as subject_name,
-                exams.title as exam_title
-            ")
-            ->join('students', 'students.id', '=', 'exam_participants.student_id')
-            ->join('users', 'users.id', '=', 'students.user_id')
-            ->join('classes', 'classes.id', '=', 'students.class_id')
-            ->join('exams', 'exams.id', '=', 'exam_participants.exam_id')
-            ->join('subjects', 'subjects.id', '=', 'exams.subject_id')
-            ->whereNotNull('exam_participants.finished_at')
-            ->orderByDesc('exam_participants.finished_at');
-
-        if ($classId > 0) {
-            $query->where('classes.id', $classId);
-        }
-
-        if ($subjectId > 0) {
-            $query->where('subjects.id', $subjectId);
-        }
-
-        if ($request->user()->isTeacher()) {
-            $query->where('exams.teacher_id', $request->user()->teacher?->id ?? 0);
-        }
-
-        return $query;
     }
 }

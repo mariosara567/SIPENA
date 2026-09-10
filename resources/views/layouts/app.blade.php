@@ -4,18 +4,26 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'My Asssesmen' }}</title>
+    <title>{{ $title ?? 'My Asesmen' }}</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- CSS / Tailwind -->
     <style>
         :root {
-            --primary: #0f766e;
-            --primary-light: #14b8a6;
-            --primary-dark: #0d5d56;
+            --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --primary: #0066D4;
+            --primary-light: #3b8cf2;
+            --primary-dark: #004c9e;
             --secondary: #6366f1;
             --success: #16a34a;
             --danger: #dc2626;
             --warning: #ea580c;
-            --bg: #f8fafc;
+            --bg: #F8F9FA;
             --surface: #ffffff;
             --text: #1e293b;
             --text-muted: #64748b;
@@ -30,29 +38,35 @@
             padding: 0;
         }
 
-        html, body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        html {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg);
             color: var(--text);
-            height: 100%;
+            font-weight: 500;
+            min-height: 100%;
         }
 
         body {
             display: grid;
-            grid-template-columns: 260px 1fr;
-            grid-template-rows: 70px 1fr;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 75px auto;
+            min-height: 100vh;
         }
 
         /* Sidebar */
         .sidebar {
             grid-row: 1 / -1;
             grid-column: 1;
-            background: var(--primary);
+            background: linear-gradient(180deg, #0066D4 0%, #004c9e 100%);
             color: white;
             padding: 20px 0;
             overflow-y: auto;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 4px 0 20px rgba(0, 102, 212, 0.25);
             z-index: 100;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            align-self: start;
         }
 
         .sidebar-brand {
@@ -137,6 +151,8 @@
             border-bottom: 1px solid var(--border);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             z-index: 50;
+            position: sticky;
+            top: 0;
         }
 
         .topbar-left {
@@ -189,9 +205,26 @@
         main {
             grid-column: 2;
             grid-row: 2;
-            overflow-y: auto;
-            padding: 30px;
+            padding: 30px 30px 0 30px;
             background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 75px);
+        }
+
+        /* Global Footer */
+        .global-footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 24px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .global-footer strong {
+            color: var(--text);
+            font-weight: 700;
         }
 
         /* Alert Messages */
@@ -355,8 +388,8 @@
         }
 
         th, td {
-            padding: 12px 14px;
-            text-align: left;
+            padding: 10px 14px;
+            text-align: center;
             border-bottom: 1px solid var(--border);
             font-size: 14px;
         }
@@ -459,8 +492,8 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
         <a class="sidebar-brand" href="{{ route('dashboard') }}">
-            <span class="mark">S</span>
-            <span>My Asssesmen</span>
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: #ffffff; color: var(--primary, #0066D4); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; font-weight: 800;">S</div>
+            <span>My Asesmen</span>
         </a>
 
         <nav>
@@ -479,16 +512,18 @@
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Ujian</div>
                     <ul class="sidebar-nav">
-                        <li>
-                            <a href="{{ route('exams.index') }}" class="{{ request()->routeIs('exams.*') ? 'active' : '' }}">
-                                <i class="fas fa-clipboard-list"></i> Kelola Ujian
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('monitoring.index') }}" class="{{ request()->routeIs('monitoring.*') ? 'active' : '' }}">
-                                <i class="fas fa-chart-line"></i> Monitoring
-                            </a>
-                        </li>
+                        @if(auth()->user()->role === 'teacher')
+                            <li>
+                                <a href="{{ route('exams.index') }}" class="{{ request()->routeIs('exams.*') ? 'active' : '' }}">
+                                    <i class="fas fa-clipboard-list"></i> Ujian & Token
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('monitoring.index') }}" class="{{ request()->routeIs('monitoring.*') ? 'active' : '' }}">
+                                    <i class="fas fa-chart-line"></i> Monitoring
+                                </a>
+                            </li>
+                        @endif
                         <li>
                             <a href="{{ route('reports.index') }}" class="{{ request()->routeIs('reports.*') ? 'active' : '' }}">
                                 <i class="fas fa-file-pdf"></i> Laporan
@@ -560,31 +595,48 @@
             <h1 style="margin: 0; font-size: 18px; color: var(--text);">{{ $title ?? 'My Asssesmen' }}</h1>
         </div>
         <div class="topbar-right">
-            <div class="user-menu">
-                <i class="fas fa-user-circle" style="font-size: 20px;"></i>
-                <span>{{ auth()->user()->name }}</span>
-                <span style="font-size: 11px; color: rgba(15, 118, 110, 0.7);">({{ ucfirst(auth()->user()->role) }})</span>
+            <div class="user-menu" style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: background 0.3s ease;">
+                @if(auth()->user()->role === 'teacher' && auth()->user()->gender)
+                    <span style="font-weight: 500; color: var(--text);">{{ auth()->user()->gender === 'P' ? 'Halo Ibu' : 'Halo Bapak' }}, {{ auth()->user()->name }}</span>
+                @else
+                    <span style="font-weight: 500; color: var(--text);">Halo, {{ ucfirst(auth()->user()->role) }}</span>
+                @endif
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px;">
+                    {{ auth()->user()->getInitials() }}
+                </div>
             </div>
         </div>
     </header>
 
     <!-- Main Content -->
     <main>
-        @if (session('status'))
-            <div class="alert success">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ session('status') }}</span>
-            </div>
-        @endif
+        <!-- Toast Container -->
+        <div id="toast-container" style="position: fixed; top: 85px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; pointer-events: none;"></div>
 
-        @if ($errors->any())
-            <div class="alert error">
-                <i class="fas fa-exclamation-circle"></i>
-                <span>{{ $errors->first() }}</span>
+        <!-- Global Delete Confirmation Modal -->
+        <div id="globalDeleteModal" class="modal" style="display:none; z-index: 10000;">
+            <div class="modal-content" style="max-width: 400px; text-align: center; padding: 32px 24px;">
+                <img src="{{ asset('images/auth/delete-illustration.png') }}" alt="Konfirmasi Hapus" style="width: 140px; margin: 0 auto 16px;">
+                <h3 style="margin-top: 0; font-size: 20px; font-weight: 700;">Hapus Data?</h3>
+                <p id="globalDeleteMessage" style="color: #64748b; margin-bottom: 24px; font-size: 14px; line-height: 1.5;">Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.</p>
+                
+                <form id="globalDeleteForm" method="POST" action="">
+                    @csrf
+                    @method('DELETE')
+                    <div style="display: flex; justify-content: center; gap: 12px;">
+                        <button type="button" class="btn" style="background: transparent; color: #64748b; border: 1px solid #cbd5e1;" onclick="closeGlobalDeleteModal()">Batal</button>
+                        <button type="submit" class="btn btn-danger-light" style="background-color: #ef4444; color: white; border: none;">Ya, Hapus</button>
+                    </div>
+                </form>
             </div>
-        @endif
+        </div>
 
         {{ $slot }}
+
+        <!-- Global Footer -->
+        <div class="global-footer">
+            &copy; {{ date('Y') }} MyAsesmen. Dikembangkan oleh <strong>Yohanes Alvons</strong> &amp; <strong>Mario Hafner</strong>
+        </div>
     </main>
 
     <!-- Global Modals -->
@@ -625,22 +677,7 @@ n    <div id="updateModal" class="modal" style="display:none;">
         </div>
     </div>
 
-    <div id="deleteModal" class="modal" style="display:none;">
-        <div class="modal-content" style="max-width:520px;">
-            <h3>Konfirmasi Hapus</h3>
-            <p class="text-muted">Apakah Anda yakin ingin menghapus akun ini? Tindakan ini tidak dapat dibatalkan.</p>
-            <p id="deleteTargetName" style="font-weight:600;margin:0 0 12px;color:var(--text);"></p>
-            <div style="display:flex;justify-content:flex-end;gap:10px;">
-                <button type="button" id="cancelDelete" class="btn btn-secondary">Batal</button>
-                <button type="button" id="confirmDelete" class="btn btn-danger">Hapus</button>
-            </div>
-        </div>
-    </div>
 
-    <form id="deleteForm" method="POST" style="display:none;">
-        @csrf
-        @method('DELETE')
-    </form>
 
     <style>
         /* Modal common styles */
@@ -653,12 +690,10 @@ n    <div id="updateModal" class="modal" style="display:none;">
     </style>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function(){
+        document.addEventListener('DOMContentLoaded', function(){
         const backdrop = document.getElementById('modalBackdrop');
         const updateModal = document.getElementById('updateModal');
         const resetModal = document.getElementById('resetModal');
-        const deleteModal = document.getElementById('deleteModal');
-        const deleteForm = document.getElementById('deleteForm');
         const updateForm = document.getElementById('updateForm');
         const resetForm = document.getElementById('resetForm');
 
@@ -673,7 +708,7 @@ n    <div id="updateModal" class="modal" style="display:none;">
                 document.getElementById('update_name').value = this.getAttribute('data-name') || '';
                 document.getElementById('update_username').value = this.getAttribute('data-username') || '';
                 document.getElementById('update_nip').value = this.getAttribute('data-nip') || '';
-                document.getElementById('update_mapel').value = this.getAttribute('data-mapel') || '';
+                document.getElementById('update_mapel').value = this.getAttribute('data-subject') || '';
                 openModal(updateModal);
             });
         });
@@ -693,22 +728,128 @@ n    <div id="updateModal" class="modal" style="display:none;">
             btn.addEventListener('click', function(){
                 const action = this.getAttribute('data-action');
                 const name = this.getAttribute('data-name') || '';
-                deleteForm.setAttribute('action', action);
-                document.getElementById('deleteTargetName').textContent = name ? ('Akun: ' + name) : '';
-                openModal(deleteModal);
+                const message = name ? ('Apakah Anda yakin ingin menghapus ' + name + ' secara permanen?') : null;
+                confirmGlobalDelete(action, message);
             });
         });
 
         document.getElementById('cancelUpdate').addEventListener('click', function(){ closeModal(updateModal); });
         document.getElementById('cancelReset').addEventListener('click', function(){ closeModal(resetModal); });
-        document.getElementById('cancelDelete').addEventListener('click', function(){ closeModal(deleteModal); });
-
-        document.getElementById('confirmDelete').addEventListener('click', function(){ deleteForm.submit(); });
 
         // close when clicking backdrop
-        backdrop.addEventListener('click', function(){ [updateModal, resetModal, deleteModal].forEach(m => m.style.display = 'none'); backdrop.style.display='none'; });
-    });
-    </script>
+        backdrop.addEventListener('click', function(){ 
+            if(updateModal) updateModal.style.display = 'none';
+            if(resetModal) resetModal.style.display = 'none';
+            backdrop.style.display='none'; 
+            document.getElementById('globalDeleteModal').style.display='none';
+        });
 
+        // Global Delete Modal Logic
+        function confirmGlobalDelete(actionUrl, customMessage = null) {
+            const modal = document.getElementById('globalDeleteModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            const form = document.getElementById('globalDeleteForm');
+            const messageEl = document.getElementById('globalDeleteMessage');
+
+            form.action = actionUrl;
+            
+            if(customMessage) {
+                messageEl.innerText = customMessage;
+            } else {
+                messageEl.innerText = "Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.";
+            }
+
+            modal.style.display = 'flex';
+            backdrop.style.display = 'block';
+        }
+
+        function closeGlobalDeleteModal() {
+            const modal = document.getElementById('globalDeleteModal');
+            const backdrop = document.getElementById('modalBackdrop');
+            modal.style.display = 'none';
+            backdrop.style.display = 'none';
+        }
+        
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgColor, icon, textColor;
+            
+            if (type === 'error') {
+                bgColor = '#fef2f2';
+                textColor = '#ef4444';
+                icon = '<i class="fas fa-exclamation-circle"></i>';
+            } else {
+                const lowerMsg = message.toLowerCase();
+                if (lowerMsg.includes('dihapus') || lowerMsg.includes('hapus')) {
+                    bgColor = '#fef2f2';
+                    textColor = '#ef4444'; // Red
+                    icon = '<i class="fas fa-trash-alt"></i>';
+                } else if (lowerMsg.includes('diperbarui') || lowerMsg.includes('edit')) {
+                    bgColor = '#eff6ff';
+                    textColor = '#3b82f6'; // Blue
+                    icon = '<i class="fas fa-info-circle"></i>';
+                } else {
+                    bgColor = '#f0fdf4';
+                    textColor = '#22c55e'; // Green
+                    icon = '<i class="fas fa-check-circle"></i>';
+                }
+            }
+
+            toast.style.cssText = `
+                background: ${bgColor};
+                color: ${textColor};
+                padding: 16px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-weight: 500;
+                font-size: 14px;
+                border-left: 4px solid ${textColor};
+                pointer-events: auto;
+                cursor: pointer;
+                transform: translateX(100%);
+                opacity: 0;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            `;
+
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            toast.onclick = () => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+                toast.style.opacity = '1';
+            }, 10);
+
+            setTimeout(() => {
+                if(toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            @if(session('status'))
+                showToast("{{ session('status') }}", "success");
+            @endif
+
+            @if($errors->any())
+                showToast("{{ $errors->first() }}", "error");
+            @endif
+        });
+    </script>
 </body>
 </html>

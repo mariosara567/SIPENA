@@ -14,12 +14,12 @@ class SchoolClass extends Model
 
     protected $fillable = [
         'name',
-        'year',
+        'level',
     ];
 
     public function getDisplayNameAttribute(): string
     {
-        return $this->year ? sprintf('%s (%s)', $this->name, $this->year) : $this->name;
+        return $this->level ? sprintf('Kelas %s - %s', $this->level, $this->name) : $this->name;
     }
 
     public function students(): HasMany

@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-      :root{--primary:#0f766e;--primary-light:#14b8a6;--bg:#f5f7fa;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--success:#16a34a;--danger:#dc2626;--warning:#ea580c;--shadow:0 4px 12px rgba(0,0,0,.07)}
+      :root{--primary:#0284c7;--primary-light:#38bdf8;--bg:#f5f7fa;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--success:#16a34a;--danger:#dc2626;--warning:#ea580c;--shadow:0 4px 12px rgba(0,0,0,.07)}
       *{box-sizing:border-box;margin:0;padding:0} body{font-family:Poppins,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
       .student-top{height:68px;background:var(--surface);border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50}
       .brand{font-weight:900;color:var(--primary);font-size:20px;text-decoration:none}.student-user{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;font-weight:700}.logout{border:1px solid var(--border);background:#fff;border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer;color:var(--text)}
@@ -20,7 +20,10 @@
 @unless($fullscreen)
 <header class="student-top">
   <a class="brand" href="{{ route('student.exams.index') }}">My Asssesmen</a>
-  <div class="student-user"><span><i class="fas fa-user-graduate"></i> {{ auth()->user()->name }}</span><form method="POST" action="{{ route('logout') }}">@csrf<button class="logout" type="submit"><i class="fas fa-right-from-bracket"></i> Keluar</button></form></div>
+  <div class="student-time" style="color:var(--text); font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px;">
+      <i class="far fa-clock" style="color:var(--primary);"></i>
+      <span id="realtime-clock"></span>
+  </div>
 </header>
 @endunless
 <main class="{{ $fullscreen ? 'exam-main' : '' }}">
@@ -28,5 +31,18 @@
   @if($errors->any())<div class="alert error">{{ $errors->first() }}</div>@endif
   {{ $slot }}
 </main>
+@unless($fullscreen)
+<script>
+    function updateClock() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const dateStr = now.toLocaleDateString('id-ID', options);
+        const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('realtime-clock').textContent = dateStr + ' - ' + timeStr + ' WIB';
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+@endunless
 </body>
 </html>

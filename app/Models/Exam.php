@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Exam extends Model
 {
@@ -16,8 +17,9 @@ class Exam extends Model
         'subject_id',
         'teacher_id',
         'title',
-        'start_time',
-        'end_time',
+        'exam_date',
+        'academic_year',
+        'exam_type',
         'duration',
         'token',
         'status',
@@ -27,10 +29,56 @@ class Exam extends Model
     protected function casts(): array
     {
         return [
-            'start_time' => 'datetime',
-            'end_time' => 'datetime',
+            'exam_date' => 'date',
             'duration' => 'integer',
         ];
+    }
+
+    /**
+     * Compute status automatically based on exam_date.
+     * - past date → closed
+     * - today → active
+     * - future date → scheduled
+     */
+    public function getComputedStatus(): string
+    {
+        if (!$this->exam_date) {
+            return 'scheduled';
+        }
+
+        $today = Carbon::today();
+
+        if ($this->exam_date->isSameDay($today)) {
+            return 'active';
+        }
+
+        if ($this->exam_date->lt($today)) {
+            return 'closed';
+        }
+
+        return 'scheduled';
+    }
+
+    public function getStartTimeAttribute()
+    {
+        return $this->exam_date ? $this->exam_date->copy()->startOfDay() : null;
+    }
+
+    public function getEndTimeAttribute()
+    {
+        return $this->exam_date ? $this->exam_date->copy()->endOfDay() : null;
+    }
+
+    /**
+     * Generate a unique 5-character uppercase token.
+     */
+    public static function generateUniqueToken(): string
+    {
+        do {
+            $token = strtoupper(Str::random(5));
+        } while (self::where('token', $token)->exists());
+
+        return $token;
     }
 
     public function subject(): BelongsTo
@@ -53,8 +101,16 @@ class Exam extends Model
         return $this->hasMany(ExamParticipant::class);
     }
 
+    public function classes()
+    {
+        return $this->belongsToMany(SchoolClass::class, 'exam_classes', 'exam_id', 'class_id');
+    }
+
     public function isInsideSchedule(Carbon $time): bool
     {
-        return $time->betweenIncluded($this->start_time, $this->end_time);
+        if (!$this->exam_date) {
+            return false;
+        }
+        return $time->isSameDay($this->exam_date);
     }
 }

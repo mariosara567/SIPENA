@@ -1,55 +1,80 @@
 <x-layouts.app :title="'Monitoring Ujian - My Asssesmen'">
-    <section class="grid two">
-        <article class="card"><h3 style="margin:0;">Peserta Terdaftar</h3><p style="font-size:28px;margin:8px 0 0;">{{ $total }}</p></article>
-        <article class="card"><h3 style="margin:0;">Peserta Online</h3><p style="font-size:28px;margin:8px 0 0;">{{ $online }}</p></article>
-        <article class="card"><h3 style="margin:0;">Sedang Mengerjakan</h3><p style="font-size:28px;margin:8px 0 0;">{{ $inProgress }}</p></article>
-        <article class="card"><h3 style="margin:0;">Selesai</h3><p style="font-size:28px;margin:8px 0 0;">{{ $completed }}</p></article>
+    {{-- Status Filter Tabs --}}
+    <section class="card" style="padding:16px 24px; border-top:5px solid var(--primary); margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div class="filter-pills">
+                <a href="{{ route('monitoring.index', ['status' => 'all']) }}" class="{{ $statusFilter === 'all' ? 'active' : '' }}">
+                    Semua <span class="pill-count">{{ $statusCounts['all'] }}</span>
+                </a>
+                <a href="{{ route('monitoring.index', ['status' => 'active']) }}" class="{{ $statusFilter === 'active' ? 'active' : '' }}">
+                    <i class="fas fa-circle" style="font-size:8px; color:#22c55e;"></i> Aktif <span class="pill-count">{{ $statusCounts['active'] }}</span>
+                </a>
+                <a href="{{ route('monitoring.index', ['status' => 'scheduled']) }}" class="{{ $statusFilter === 'scheduled' ? 'active' : '' }}">
+                    <i class="fas fa-circle" style="font-size:8px; color:#3b82f6;"></i> Terjadwal <span class="pill-count">{{ $statusCounts['scheduled'] }}</span>
+                </a>
+                <a href="{{ route('monitoring.index', ['status' => 'closed']) }}" class="{{ $statusFilter === 'closed' ? 'active' : '' }}">
+                    <i class="fas fa-circle" style="font-size:8px; color:#94a3b8;"></i> Selesai <span class="pill-count">{{ $statusCounts['closed'] }}</span>
+                </a>
+            </div>
+        </div>
     </section>
 
+    {{-- Exam List --}}
     <section class="card table-wrap">
-        <h2 style="margin-top:0;">Progress per Ujian</h2>
+        <h2 style="margin:0 0 16px; font-size:18px;">Daftar Ujian</h2>
         <table>
-            <thead><tr><th>Ujian</th><th>Mapel</th><th>Guru</th><th>Peserta</th><th>Sedang</th><th>Selesai</th><th>Progress</th></tr></thead>
+            <thead>
+                <tr>
+                    <th style="text-align:left;">Ujian</th>
+                    <th>Mapel</th>
+                    <th>Status</th>
+                    <th>Peserta</th>
+                    <th>Mengerjakan</th>
+                    <th>Selesai</th>
+                    <th>Progress</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
             <tbody>
             @forelse($rows as $row)
                 <tr>
-                    <td>{{ $row['exam']->title }}</td>
-                    <td>{{ $row['exam']->subject->name }}</td>
-                    <td>{{ $row['exam']->teacher->user->name }}</td>
+                    <td style="text-align:left;">
+                        <strong>{{ $row['exam']->title }}</strong>
+                        <br><small style="color:var(--text-muted);">{{ $row['exam']->teacher->user->name }} · {{ optional($row['exam']->exam_date)->format('d M Y') }}</small>
+                    </td>
+                    <td>
+                        {{ $row['exam']->subject->name }}
+                        <br><small style="color:var(--text-muted); font-size:11px;">{{ $row['exam']->classes->pluck('display_name')->join(', ') }}</small>
+                    </td>
+                    <td>
+                        <span class="status-badge {{ $row['exam']->status }}">{{ ucfirst($row['exam']->status) }}</span>
+                    </td>
                     <td>{{ $row['exam']->participants_count }}</td>
                     <td>{{ $row['exam']->in_progress_count }}</td>
                     <td>{{ $row['exam']->completed_count }}</td>
-                    <td>{{ $row['progress'] }}%</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
+                            <div style="flex:1; max-width:80px; height:6px; background:var(--border); border-radius:99px; overflow:hidden;">
+                                <div style="width:{{ min($row['progress'], 100) }}%; height:100%; background:{{ $row['progress'] >= 100 ? '#22c55e' : 'var(--primary)' }}; border-radius:99px; transition:width 0.3s;"></div>
+                            </div>
+                            <span style="font-size:12px; font-weight:700;">{{ $row['progress'] }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <a href="{{ route('monitoring.show', $row['exam']) }}" class="btn btn-secondary" style="padding:0 12px; min-height:32px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                            <i class="fas fa-eye"></i> Live Monitoring
+                        </a>
+                    </td>
                 </tr>
             @empty
-                <tr><td colspan="7">Belum ada data monitoring.</td></tr>
+                <tr><td colspan="8" style="padding:32px; color:var(--text-muted);">Belum ada data ujian.</td></tr>
             @endforelse
             </tbody>
         </table>
     </section>
 
-    <section class="card table-wrap">
-        <div class="card-header"><div><h2 style="margin:0;">Siswa yang Sedang Ujian</h2><p>Pantau pelanggaran perpindahan tab dan buka kembali akses siswa bila sudah diverifikasi.</p></div><span class="badge">Auto refresh 15 detik</span></div>
-        <table>
-            <thead><tr><th>Siswa</th><th>Ujian</th><th>Mulai</th><th>Pelanggaran</th><th>Status Akses</th><th>Aksi</th></tr></thead>
-            <tbody>
-            @forelse($activeParticipants as $participant)
-                <tr>
-                    <td><strong>{{ $participant->student->user->name }}</strong><br><small>{{ $participant->student->nisn }} · {{ $participant->student->schoolClass?->display_name }}</small></td>
-                    <td>{{ $participant->exam->subject->name }}<br><small>{{ $participant->exam->title }}</small></td>
-                    <td>{{ $participant->started_at?->format('H:i:s') }}</td>
-                    <td><strong style="color:{{ $participant->violation_count ? '#dc2626' : '#16a34a' }}">{{ $participant->violation_count }} kali</strong><br><small>{{ $participant->locked_reason }}</small></td>
-                    <td>{{ $participant->is_locked ? 'Terkunci' : 'Aktif' }}</td>
-                    <td>
-                        @if($participant->is_locked)
-                            <form method="POST" action="{{ route('monitoring.unlock', $participant) }}">@csrf<button class="btn btn-primary" type="submit"><i class="fas fa-unlock"></i> Buka Kunci</button></form>
-                        @else <span style="color:#16a34a;font-weight:700;">Aman</span> @endif
-                    </td>
-                </tr>
-            @empty <tr><td colspan="6">Belum ada siswa yang sedang mengerjakan.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </section>
-    <script>setTimeout(() => location.reload(), 15000);</script>
+    <script>
+        // Auto refresh daftar ujian setiap 15 detik
+        setTimeout(() => location.reload(), 15000);
+    </script>
 </x-layouts.app>

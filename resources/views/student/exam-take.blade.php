@@ -1,103 +1,437 @@
 <x-layouts.student :title="$exam->title.' - My Asssesmen'" :fullscreen="true">
     <style>
-        .exam-question{display:none}.exam-question.active{display:block}.exam-option{display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:2px solid var(--border);border-radius:10px;cursor:pointer;margin-bottom:10px;background:var(--surface)}.exam-option:hover{border-color:var(--primary)}.exam-option:has(input:checked){border-color:var(--primary);background:rgba(15,118,110,.08)}.exam-option input{width:20px;min-height:20px;margin-top:1px}.option-letter{width:28px;height:28px;flex:0 0 28px;border:2px solid var(--border);border-radius:7px;display:grid;place-items:center;font-weight:800;color:var(--primary)}.exam-option:has(input:checked) .option-letter{background:var(--primary);border-color:var(--primary);color:#fff}.exam-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.exam-modal-layer{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;align-items:center;justify-content:center;padding:20px}.exam-modal-layer.open{display:flex}.exam-modal{width:min(680px,100%);background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden}.exam-modal-header{padding:18px 22px;background:var(--primary);color:#fff;display:flex;justify-content:space-between;font-weight:800}.exam-modal-body{padding:22px}.question-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:9px}.question-jump{min-height:50px;border:2px solid var(--border);border-radius:8px;background:#fff;font-weight:700;cursor:pointer}.question-jump.answered{background:var(--primary);border-color:var(--primary);color:#fff}.question-jump.doubted{background:#fbbf24;border-color:#f59e0b;color:#422006}.close-modal{border:0;background:none;color:inherit;font-size:20px;cursor:pointer}.confirm-actions{display:flex;gap:10px}.confirm-actions>*{flex:1}@media(max-width:700px){.question-grid{grid-template-columns:repeat(5,1fr)}.exam-actions .btn{padding:0 12px}}
-    </style>
+        body { background: #f8fafc; margin: 0; padding: 0; }
+        .tka-header {
+            background: #0284c7; color: #fff; padding: 12px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 64px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+        }
+        .tka-header-left { display: flex; align-items: center; gap: 16px; font-weight: 600; font-size: 15px; }
+        .tka-header-right { display: flex; align-items: center; gap: 16px; }
+        
+        .tka-btn-nav { background: #2563eb; color: #fff; border: 1px solid #3b82f6; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .tka-btn-nav:hover { background: #1d4ed8; }
+        .tka-timer { background: #eab308; color: #000; padding: 8px 16px; border-radius: 6px; font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 15px; }
 
-    <section class="card" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:5px solid var(--primary);">
-        <div>
-            <h1 style="margin:0 0 6px;">{{ $exam->title }}</h1>
-            <p>{{ $exam->subject->name }} · <span id="save-status" style="font-weight:800;color:#047857;">✓ Terhubung</span></p>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;">
-            <button class="btn btn-secondary" type="button" id="open-navigation"><i class="fas fa-grip"></i> Daftar Soal</button>
-            <div style="padding:11px 16px;border-radius:9px;background:#fff7d6;color:#92400e;font-weight:800;border:2px solid #fbbf24;">
-                <i class="fas fa-stopwatch"></i> <span id="timer">--:--</span>
-            </div>
-        </div>
-    </section>
+        .tka-subheader {
+            background: #fff; padding: 12px 24px; border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+            position: fixed; top: 64px; left: 0; right: 0; z-index: 40;
+        }
+        .tka-badge { background: #eff6ff; color: #1d4ed8; padding: 6px 16px; border-radius: 99px; font-weight: 700; font-size: 13px; }
+        .tka-font-ctrl { color: #64748b; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .tka-font-ctrl button { background: none; border: none; font-weight: 700; color: #1d4ed8; cursor: pointer; font-size: 14px; }
+
+        .tka-content {
+            padding: 40px 24px; max-width: 1100px; margin: 120px auto 100px;
+            font-size: var(--question-font-size, 15px); transition: font-size 0.2s;
+        }
+        
+        .exam-question { display: none; }
+        .exam-question.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .tka-image-note { font-weight: 700; margin-bottom: 12px; color: #0f172a; }
+        .tka-question-img { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px; }
+        .tka-question-text { line-height: 1.7; color: #334155; margin-bottom: 32px; white-space: pre-line; }
+
+        .tka-option {
+            display: flex; align-items: flex-start; gap: 16px;
+            padding: 16px 20px; border: 1px solid #e2e8f0; border-radius: 12px;
+            cursor: pointer; margin-bottom: 12px; background: #fff; transition: all 0.2s;
+        }
+        .tka-option:hover { border-color: #94a3b8; }
+        .tka-option:has(input:checked) { border-color: #0284c7; background: #f0f9ff; }
+        .tka-option input { display: none; }
+        
+        .tka-option-letter {
+            width: 32px; height: 32px; flex: 0 0 32px;
+            border: 1px solid #cbd5e1; border-radius: 8px;
+            display: grid; place-items: center;
+            font-weight: 700; color: #64748b; background: #f8fafc;
+        }
+        .tka-option:has(input:checked) .tka-option-letter {
+            background: #0284c7; border-color: #0284c7; color: #fff;
+        }
+        .tka-option-text { margin-top: 5px; color: #334155; line-height: 1.5; font-weight: 500; }
+        
+        .tka-footer {
+            background: #fff; border-top: 1px solid #e2e8f0; padding: 16px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 40; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+        }
+        
+        .tka-btn { border: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s; }
+        .tka-btn:hover { opacity: 0.9; }
+        .tka-btn-prev { background: #64748b; color: #fff; }
+        .tka-btn-doubt { background: #eab308; color: #422006; padding: 10px 24px; border-radius: 6px; font-weight: 700; }
+        .tka-btn-next { background: #0284c7; color: #fff; }
+        .tka-btn-finish { background: #22c55e; color: #fff; }
+
+        /* Navigation Modal */
+        .tka-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .tka-overlay.open { display: flex; }
+        .tka-modal {
+            background: #f8fafc; border-radius: 12px; width: 100%; max-width: 680px;
+            overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+        }
+        .tka-modal-header {
+            background: #0284c7; color: #fff; padding: 16px 24px;
+            display: flex; justify-content: space-between; align-items: center; font-weight: 700;
+        }
+        .tka-modal-close { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+        .tka-modal-body { padding: 24px; }
+        
+        .tka-legend { display: flex; gap: 16px; margin-bottom: 24px; font-size: 13px; font-weight: 600; color: #475569; }
+        .tka-legend div { display: flex; align-items: center; gap: 8px; }
+        .tka-box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; }
+        .tka-box.blue { background: #0284c7; border-color: #0284c7; }
+        .tka-box.yellow { background: #eab308; border-color: #ca8a04; }
+        
+        .tka-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; }
+        .tka-num-btn {
+            aspect-ratio: 1; border: 1px solid #cbd5e1; border-radius: 8px;
+            background: #fff; font-weight: 700; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 16px; color: #334155; position: relative; transition: all 0.1s;
+        }
+        .tka-num-btn:hover { border-color: #0284c7; }
+        .tka-num-btn.answered { background: #0284c7; border-color: #0284c7; color: #fff; }
+        .tka-num-btn.doubted { background: #eab308; border-color: #ca8a04; color: #422006; }
+        .tka-num-btn .opt-ans { font-size: 11px; position: absolute; bottom: 4px; right: 6px; font-weight: 800; }
+        
+        /* Modals (Finish, Lock) */
+        .tka-alert-modal { background: #fff; border-radius: 12px; width: 100%; max-width: 480px; text-align: center; overflow: hidden; }
+        .tka-alert-body { padding: 32px 24px; }
+        
+        @media(max-width:700px){
+            .tka-grid { grid-template-columns: repeat(5, 1fr); }
+            .tka-header-left span:first-child { display: none; }
+            .tka-footer { padding: 12px; gap: 8px; }
+            .tka-btn { padding: 10px 16px; font-size: 13px; }
+        }
+    </style>
 
     <form id="submit-form" method="POST" action="{{ route('student.exams.submit', $participant) }}">@csrf</form>
 
-    <section class="card">
+    <div class="tka-header">
+        <div class="tka-header-left">
+            <span style="font-family: 'Brush Script MT', cursive; font-size: 24px; margin-right: 12px;">My Asssesmen</span>
+            <span style="font-weight:400; opacity:0.8;">|</span>
+            <span>Mata Ujian: {{ $exam->subject->name }}</span>
+        </div>
+        <div class="tka-header-right">
+            <button type="button" class="tka-btn-nav" id="open-nav"><i class="fas fa-grip"></i> Daftar Soal</button>
+            <div class="tka-timer"><i class="fas fa-stopwatch"></i> <span id="timer">00:00:00</span></div>
+        </div>
+    </div>
+
+    <div class="tka-subheader">
+        <div class="tka-badge" id="question-badge">SOAL NOMOR 1</div>
+        <div class="tka-font-ctrl">
+            Ukuran font soal:
+            <button type="button" onclick="changeFontSize(-2)">A-</button>
+            <button type="button" onclick="changeFontSize(0)">A</button>
+            <button type="button" onclick="changeFontSize(2)">A+</button>
+        </div>
+    </div>
+
+    <main class="tka-content" id="question-container" style="--question-font-size: 15px;">
         @foreach($exam->questions as $question)
             @php($saved = $answers->get($question->id)?->answer)
-            <article class="exam-question {{ $loop->first ? 'active' : '' }}" data-index="{{ $loop->index }}">
-                <div class="card-header">
-                    <span style="padding:7px 13px;border-radius:999px;background:rgba(15,118,110,.1);color:var(--primary);font-weight:800;">SOAL NOMOR {{ $loop->iteration }}</span>
-                    <span style="color:var(--text-muted);">{{ $loop->iteration }} dari {{ $exam->questions->count() }}</span>
-                </div>
-                <h2 style="font-size:18px;margin-bottom:12px;">Perhatikan pertanyaan berikut!</h2>
-                <div class="question-text" style="font-size:16px;line-height:1.7;white-space:pre-line;margin-bottom:18px;">{{ $question->question }}</div>
+            <div class="exam-question {{ $loop->first ? 'active' : '' }}" data-index="{{ $loop->index }}">
+                
                 @if($question->image_path)
-                    <div style="margin-bottom:22px;text-align:center;"><img src="{{ asset('storage/'.$question->image_path) }}" alt="Gambar soal" style="max-width:100%;max-height:360px;object-fit:contain;border-radius:10px;border:1px solid var(--border);"></div>
+                    <p class="tka-image-note">Perhatikan gambar di bawah ini!</p>
+                    <img src="{{ asset('storage/'.$question->image_path) }}" class="tka-question-img" alt="Gambar Soal">
                 @endif
-                @foreach(['A','B','C','D','E'] as $option)
-                    @php($content = $question->{'option_'.strtolower($option)} ?? null)
-                    @if($content)
-                        <label class="exam-option">
-                            <input type="radio" name="q{{ $question->id }}" value="{{ $option }}" data-question-id="{{ $question->id }}" @checked($saved === $option)>
-                            <span class="option-letter">{{ $option }}</span><span>{{ $content }}</span>
-                        </label>
-                    @endif
-                @endforeach
-            </article>
+                
+                <div class="tka-question-text">{{ $question->question }}</div>
+                
+                <div class="tka-options">
+                    @foreach(['A','B','C','D','E'] as $option)
+                        @php($content = $question->{'option_'.strtolower($option)} ?? null)
+                        @if($content)
+                            <label class="tka-option">
+                                <input type="radio" name="q{{ $question->id }}" value="{{ $option }}" data-qid="{{ $question->id }}" data-idx="{{ $loop->parent->index }}" @checked($saved === $option)>
+                                <div class="tka-option-letter">{{ $option }}</div>
+                                <div class="tka-option-text">{{ $content }}</div>
+                            </label>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
         @endforeach
-    </section>
+    </main>
 
-    <section class="card exam-actions">
-        <button type="button" class="btn btn-secondary" id="previous"><i class="fas fa-chevron-left"></i> Soal Sebelumnya</button>
-        <button type="button" class="btn" id="doubt" style="background:#fbbf24;color:#422006;"><i class="far fa-square"></i> Ragu-Ragu</button>
-        <button type="button" class="btn btn-primary" id="next">Soal Berikutnya <i class="fas fa-chevron-right"></i></button>
-    </section>
+    <footer class="tka-footer">
+        <button type="button" class="tka-btn tka-btn-prev" id="btn-prev"><i class="fas fa-chevron-left"></i> Soal Sebelumnya</button>
+        <label class="tka-btn-doubt" style="cursor:pointer; display:inline-flex; align-items:center;">
+            <input type="checkbox" id="doubt-check" style="margin-right:8px; width:16px; height:16px;"> Ragu - Ragu
+        </label>
+        <button type="button" class="tka-btn tka-btn-next" id="btn-next">Soal Berikutnya <i class="fas fa-chevron-right"></i></button>
+    </footer>
 
-    <div class="exam-modal-layer" id="navigation-modal"><div class="exam-modal"><div class="exam-modal-header"><span><i class="fas fa-grip"></i> Navigasi Lembar Jawaban</span><button class="close-modal" data-close>×</button></div><div class="exam-modal-body"><p style="margin-bottom:16px;">Hijau: sudah dijawab · Kuning: ragu-ragu · Putih: belum dijawab</p><div class="question-grid">@foreach($exam->questions as $question)<button type="button" class="question-jump {{ $answers->get($question->id)?->answer ? 'answered' : '' }}" data-jump="{{ $loop->index }}">{{ $loop->iteration }}</button>@endforeach</div></div></div></div>
-    <div class="exam-modal-layer" id="finish-modal"><div class="exam-modal" style="max-width:480px;"><div class="exam-modal-body" style="text-align:center;padding:30px;"><i class="fas fa-triangle-exclamation" style="font-size:48px;color:#f59e0b;"></i><h2 style="margin:15px 0 8px;">Konfirmasi Mengakhiri Ujian</h2><p>Setelah dikirim, jawaban tidak dapat diubah kembali.</p><label style="display:flex;text-align:left;gap:10px;padding:14px;border:2px solid var(--border);border-radius:10px;margin:18px 0;"><input type="checkbox" id="finish-check" style="width:20px;min-height:20px;"> Saya telah memeriksa kembali semua jawaban.</label><div class="confirm-actions"><button class="btn btn-secondary" type="button" data-close>Batal</button><button class="btn btn-primary" type="button" id="confirm-finish" disabled>Ya, Selesai</button></div></div></div></div>
-    <div class="exam-modal-layer" id="lock-modal"><div class="exam-modal" style="max-width:480px;"><div class="exam-modal-body" style="text-align:center;padding:32px;"><i class="fas fa-lock" style="font-size:48px;color:var(--danger);"></i><h2 style="margin:15px 0 8px;">Sesi Ujian Dikunci</h2><p style="margin-bottom:20px;">Sistem mendeteksi Anda meninggalkan halaman ujian. Hubungi guru untuk membuka kunci.</p><a href="{{ route('student.exams.index') }}" class="btn btn-primary">Kembali ke Daftar Ujian</a></div></div></div>
+    <!-- Nav Modal -->
+    <div class="tka-overlay" id="nav-modal">
+        <div class="tka-modal">
+            <div class="tka-modal-header">
+                <span><i class="fas fa-grip"></i> Navigasi Lembar Jawaban</span>
+                <button class="tka-modal-close" data-close>&times;</button>
+            </div>
+            <div class="tka-modal-body">
+                <div class="tka-legend">
+                    <div><div class="tka-box blue"></div> Sudah Dijawab</div>
+                    <div><div class="tka-box yellow"></div> Ragu-Ragu</div>
+                    <div><div class="tka-box"></div> Belum Dijawab</div>
+                </div>
+                <div class="tka-grid" id="nav-grid">
+                    @foreach($exam->questions as $question)
+                        @php($saved = $answers->get($question->id)?->answer)
+                        <button type="button" class="tka-num-btn {{ $saved ? 'answered' : '' }}" data-jump="{{ $loop->index }}">
+                            {{ $loop->iteration }}
+                            <span class="opt-ans" id="opt-ans-{{ $loop->index }}">{{ $saved ?? '' }}</span>
+                        </button>
+                    @endforeach
+                </div>
+                <div style="text-align:right; margin-top:24px;">
+                    <button class="tka-btn" style="background:#475569; color:#fff;" data-close>Kembali Ke Soal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Finish Modal -->
+    <div class="tka-overlay" id="finish-modal">
+        <div class="tka-alert-modal">
+            <div class="tka-alert-body">
+                <i class="fas fa-triangle-exclamation" style="font-size:56px; color:#f59e0b; margin-bottom:16px;"></i>
+                <h2 style="margin:0 0 8px; font-size:20px; color:#0f172a;">Konfirmasi Mengakhiri Ujian</h2>
+                <p style="color:#64748b; font-size:14px; margin-bottom:24px;">Apakah Anda yakin ingin menyelesaikan lembar ujian ini?<br>Setelah dikirim, jawaban Anda tidak dapat diubah kembali.</p>
+                
+                <label style="display:flex; align-items:flex-start; text-align:left; gap:12px; padding:16px; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:24px; background:#f8fafc; cursor:pointer;">
+                    <input type="checkbox" id="finish-check" style="width:20px; min-width:20px; height:20px; margin-top:2px;"> 
+                    <span style="font-size:13px; color:#334155; line-height:1.5;">Saya menyatakan secara sadar telah memeriksa kembali semua jawaban saya dari nomor 1 sampai {{ $exam->questions->count() }}.</span>
+                </label>
+                
+                <div style="display:flex; gap:12px;">
+                    <button class="tka-btn" style="flex:1; background:#cbd5e1; color:#334155; justify-content:center;" data-close>Batal</button>
+                    <button class="tka-btn" style="flex:1; background:#cbd5e1; color:#fff; justify-content:center; cursor:not-allowed;" id="confirm-finish" disabled>Ya, Selesai</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lock Modal -->
+    <div class="tka-overlay" id="lock-modal">
+        <div class="tka-alert-modal">
+            <div class="tka-alert-body">
+                <i class="fas fa-lock" style="font-size:56px; color:#dc2626; margin-bottom:16px;"></i>
+                <h2 style="margin:0 0 8px; font-size:20px; color:#0f172a;">Sesi Ujian Dikunci</h2>
+                <p style="color:#64748b; font-size:14px; margin-bottom:24px;">Sistem mendeteksi Anda meninggalkan halaman ujian.<br>Hubungi pengawas untuk membuka kunci agar dapat melanjutkan.</p>
+                <a href="{{ route('student.exams.index') }}" class="tka-btn tka-btn-next" style="width:100%; justify-content:center; text-decoration:none;">Kembali ke Beranda</a>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const csrf=document.querySelector('meta[name="csrf-token"]').content,questions=[...document.querySelectorAll('.exam-question')],jumps=[...document.querySelectorAll('.question-jump')];let current=0,reporting=false,examActive=true;const doubts=new Set();
-        const show=i=>{current=Math.max(0,Math.min(i,questions.length-1));questions.forEach((q,n)=>q.classList.toggle('active',n===current));document.getElementById('previous').style.visibility=current?'visible':'hidden';document.getElementById('next').innerHTML=current===questions.length-1?'Selesai Ujian <i class="fas fa-circle-check"></i>':'Soal Berikutnya <i class="fas fa-chevron-right"></i>';document.getElementById('doubt').innerHTML=(doubts.has(current)?'<i class="fas fa-square-check"></i>':'<i class="far fa-square"></i>')+' Ragu-Ragu'};show(0);
-        document.getElementById('previous').onclick=()=>show(current-1);document.getElementById('next').onclick=()=>current===questions.length-1?document.getElementById('finish-modal').classList.add('open'):show(current+1);document.getElementById('doubt').onclick=()=>{doubts.has(current)?doubts.delete(current):doubts.add(current);jumps[current].classList.toggle('doubted');show(current)};
-        document.getElementById('open-navigation').onclick=()=>document.getElementById('navigation-modal').classList.add('open');document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>document.querySelectorAll('.exam-modal-layer').forEach(m=>m.classList.remove('open')));jumps.forEach(b=>b.onclick=()=>{show(+b.dataset.jump);document.getElementById('navigation-modal').classList.remove('open')});
-        const saveStatus=document.getElementById('save-status');
-        setSaveStatus(navigator.onLine?'✓ Terhubung':'⚠ Koneksi internet terputus',navigator.onLine);
-        const pendingKey='my_asssesmen:pending_answers:'+@json($participant->id);
-        const readPending=()=>{try{return JSON.parse(localStorage.getItem(pendingKey)||'{}')}catch{return {}}};
-        const writePending=data=>localStorage.setItem(pendingKey,JSON.stringify(data));
-        const setSaveStatus=(text,ok=false)=>{saveStatus.textContent=text;saveStatus.style.color=ok?'#047857':'#b45309'};
-        const pending=readPending();
-        const postAnswer=async(questionId,answer)=>{
-            const res=await fetch(@json(route('student.exams.answers.save',$participant)),{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'},body:JSON.stringify({question_id:questionId,answer})});
-            if(!res.ok) throw new Error('Gagal menyimpan jawaban');
+        // Core Variables
+        const csrf = document.querySelector('meta[name="csrf-token"]').content;
+        const questions = [...document.querySelectorAll('.exam-question')];
+        const jumps = [...document.querySelectorAll('.tka-num-btn')];
+        let current = 0;
+        let examActive = true;
+        let reporting = false;
+        const doubts = new Set();
+        let currentFontSize = 15;
+        const maxQuestions = questions.length;
+
+        // Font Controls
+        window.changeFontSize = (step) => {
+            if (step === 0) currentFontSize = 15;
+            else currentFontSize = Math.max(12, Math.min(24, currentFontSize + step));
+            document.getElementById('question-container').style.setProperty('--question-font-size', currentFontSize + 'px');
         };
-        const saveAnswer=async(input)=>{
-            const questionId=+input.dataset.questionId,answer=input.value;
-            const i=questions.indexOf(input.closest('.exam-question'));jumps[i].classList.add('answered');
-            setSaveStatus('Menyimpan...');
-            try{
-                await postAnswer(questionId,answer);
-                const p=readPending();delete p[questionId];writePending(p);
-                setSaveStatus('✓ Jawaban tersimpan',true);
-            }catch(e){
-                const p=readPending();p[questionId]=answer;writePending(p);
-                setSaveStatus('⚠ Belum tersimpan ke server');
+
+        // Navigation
+        const show = (idx) => {
+            current = Math.max(0, Math.min(idx, maxQuestions - 1));
+            questions.forEach((q, i) => q.classList.toggle('active', i === current));
+            
+            document.getElementById('question-badge').textContent = 'SOAL NOMOR ' + (current + 1);
+            
+            const prev = document.getElementById('btn-prev');
+            if (current === 0) { prev.style.visibility = 'hidden'; } else { prev.style.visibility = 'visible'; }
+            
+            const next = document.getElementById('btn-next');
+            if (current === maxQuestions - 1) {
+                next.innerHTML = 'Selesai Ujian <i class="far fa-check-circle"></i>';
+                next.className = 'tka-btn tka-btn-finish';
+            } else {
+                next.innerHTML = 'Soal Berikutnya <i class="fas fa-chevron-right"></i>';
+                next.className = 'tka-btn tka-btn-next';
+            }
+            
+            document.getElementById('doubt-check').checked = doubts.has(current);
+        };
+        show(0);
+
+        // Events
+        document.getElementById('btn-prev').onclick = () => show(current - 1);
+        document.getElementById('btn-next').onclick = () => {
+            if (current === maxQuestions - 1) {
+                document.getElementById('finish-modal').classList.add('open');
+            } else {
+                show(current + 1);
             }
         };
-        document.querySelectorAll('input[data-question-id]').forEach(input=>input.onchange=()=>saveAnswer(input));
-        const flushPending=async()=>{
-            const p=readPending(),entries=Object.entries(p);
-            if(!entries.length)return true;
-            setSaveStatus('Menyinkronkan jawaban...');
-            for(const [questionId,answer] of entries){
-                try{await postAnswer(+questionId,answer);const latest=readPending();delete latest[questionId];writePending(latest)}catch(e){setSaveStatus('⚠ Ada jawaban yang belum tersimpan');return false}
+        
+        document.getElementById('doubt-check').onchange = (e) => {
+            if(e.target.checked) {
+                doubts.add(current);
+                jumps[current].classList.add('doubted');
+            } else {
+                doubts.delete(current);
+                jumps[current].classList.remove('doubted');
             }
-            setSaveStatus('✓ Semua jawaban tersimpan',true);return true;
         };
-        window.addEventListener('online',flushPending);
-        const check=document.getElementById('finish-check'),confirm=document.getElementById('confirm-finish');check.onchange=()=>confirm.disabled=!check.checked;
-        confirm.onclick=async()=>{confirm.disabled=true;const ok=await flushPending();if(!ok){alert('Koneksi internet bermasalah. Pastikan semua jawaban sudah tersimpan sebelum mengakhiri ujian.');confirm.disabled=false;return}examActive=false;document.getElementById('submit-form').submit()};
-        const end=new Date(@json($endTimeIso)),timer=document.getElementById('timer');setInterval(async()=>{const d=end-new Date();if(d<=0){const ok=await flushPending();if(ok){examActive=false;document.getElementById('submit-form').submit()}return}const s=Math.floor(d/1000);timer.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000);
-        window.addEventListener('offline',()=>setSaveStatus('⚠ Koneksi internet terputus'));
-        document.addEventListener('visibilitychange',async()=>{if(document.hidden&&examActive&&!reporting){reporting=true;try{await fetch(@json(route('student.exams.violation',$participant)),{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'},body:JSON.stringify({reason:'Meninggalkan halaman ujian / membuka tab lain'})});document.getElementById('lock-modal').classList.add('open')}finally{reporting=false}}});
+
+        // Modal triggers
+        document.getElementById('open-nav').onclick = () => document.getElementById('nav-modal').classList.add('open');
+        document.querySelectorAll('[data-close]').forEach(btn => {
+            btn.onclick = () => document.querySelectorAll('.tka-overlay').forEach(m => m.classList.remove('open'));
+        });
+        jumps.forEach(btn => {
+            btn.onclick = () => {
+                show(+btn.dataset.jump);
+                document.getElementById('nav-modal').classList.remove('open');
+            }
+        });
+
+        // Submit logic
+        const check = document.getElementById('finish-check');
+        const confirmBtn = document.getElementById('confirm-finish');
+        check.onchange = () => {
+            if (check.checked) {
+                confirmBtn.disabled = false;
+                confirmBtn.style.background = '#0284c7';
+                confirmBtn.style.cursor = 'pointer';
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.style.background = '#cbd5e1';
+                confirmBtn.style.cursor = 'not-allowed';
+            }
+        };
+
+        const postAnswer = async (questionId, answer) => {
+            const res = await fetch(@json(route('student.exams.answers.save', $participant)), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: JSON.stringify({ question_id: questionId, answer })
+            });
+            if (!res.ok) throw new Error('Failed');
+        };
+
+        const pendingKey = 'my_asssesmen:pending_answers:' + @json($participant->id);
+        const readPending = () => { try { return JSON.parse(localStorage.getItem(pendingKey) || '{}') } catch { return {} } };
+        const writePending = data => localStorage.setItem(pendingKey, JSON.stringify(data));
+
+        document.querySelectorAll('input[type="radio"]').forEach(input => {
+            input.onchange = async () => {
+                const qid = +input.dataset.qid;
+                const idx = +input.dataset.idx;
+                const ans = input.value;
+                
+                // update grid UI instantly
+                jumps[idx].classList.add('answered');
+                document.getElementById('opt-ans-' + idx).textContent = ans;
+                
+                try {
+                    await postAnswer(qid, ans);
+                    const p = readPending(); delete p[qid]; writePending(p);
+                } catch(e) {
+                    const p = readPending(); p[qid] = ans; writePending(p);
+                }
+            };
+        });
+
+        const flushPending = async () => {
+            const p = readPending();
+            const entries = Object.entries(p);
+            if (!entries.length) return true;
+            for (const [qid, ans] of entries) {
+                try { 
+                    await postAnswer(+qid, ans); 
+                    const latest = readPending(); delete latest[qid]; writePending(latest);
+                } catch(e) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        window.addEventListener('online', flushPending);
+
+        confirmBtn.onclick = async () => {
+            if(!check.checked) return;
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = 'Menyimpan...';
+            const ok = await flushPending();
+            if (!ok) {
+                alert('Koneksi internet bermasalah. Pastikan jawaban Anda terkirim dengan merefresh halaman (jangan keluar dari browser).');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = 'Ya, Selesai';
+                return;
+            }
+            examActive = false;
+            document.getElementById('submit-form').submit();
+        };
+
+        // Timer Logic
+        const endTimeStr = @json($endTimeIso);
+        const end = new Date(endTimeStr).getTime();
+        const timerEl = document.getElementById('timer');
+        
+        const tick = async () => {
+            const now = new Date().getTime();
+            const d = end - now;
+            if (d <= 0) {
+                timerEl.textContent = "00:00:00";
+                const ok = await flushPending();
+                if (ok) {
+                    examActive = false;
+                    document.getElementById('submit-form').submit();
+                }
+                return;
+            }
+            const totalS = Math.floor(d / 1000);
+            const h = Math.floor(totalS / 3600);
+            const m = Math.floor((totalS % 3600) / 60);
+            const s = Math.floor(totalS % 60);
+            timerEl.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        };
+        setInterval(tick, 1000);
+        tick();
+
+        // Anti cheat
+        document.addEventListener('visibilitychange', async () => {
+            if(document.hidden && examActive && !reporting) {
+                reporting = true;
+                try {
+                    await fetch(@json(route('student.exams.violation', $participant)), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                        body: JSON.stringify({ reason: 'Meninggalkan halaman ujian / membuka tab lain' })
+                    });
+                    document.getElementById('lock-modal').classList.add('open');
+                } finally {
+                    reporting = false;
+                }
+            }
+        });
     </script>
 </x-layouts.student>

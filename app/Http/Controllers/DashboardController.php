@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Exam;
 use App\Models\Student;
+use App\Models\Subject;
 use App\Models\Teacher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -31,9 +32,7 @@ class DashboardController extends Controller
             $teacherCount = Teacher::count();
             $examCount = Exam::count();
 
-            $activeExamCount = Exam::where('start_time', '<=', now())
-                ->where('end_time', '>=', now())
-                ->count();
+            $activeExamCount = Exam::whereDate('exam_date', today())->count();
 
             $module = [
                 'title' => 'Dashboard Administrator',
@@ -55,30 +54,11 @@ class DashboardController extends Controller
                         'description' => 'Kelola data dan akun guru.',
                     ],
                     [
-                        'name' => 'Ujian',
-                        'count' => $examCount,
-                        'route' => 'exams.index',
-                        'icon' => 'fas fa-file-alt',
-                        'description' => 'Kelola seluruh ujian.',
-                    ],
-                    [
-                        'name' => 'Ujian Berlangsung',
-                        'count' => $activeExamCount,
-                        'route' => 'exams.index',
-                        'icon' => 'fas fa-clock',
-                        'description' => 'Ujian yang sedang berlangsung saat ini.',
-                    ],
-                    [
-                        'name' => 'Data Akademik',
+                        'name' => 'Mata Pelajaran',
+                        'count' => Subject::count(),
                         'route' => 'admin.academic.index',
-                        'icon' => 'fas fa-school',
-                        'description' => 'Kelola kelas dan mata pelajaran.',
-                    ],
-                    [
-                        'name' => 'Monitoring',
-                        'route' => 'monitoring.index',
-                        'icon' => 'fas fa-desktop',
-                        'description' => 'Pantau aktivitas ujian.',
+                        'icon' => 'fas fa-book',
+                        'description' => 'Kelola daftar mata pelajaran.',
                     ],
                     [
                         'name' => 'Laporan Nilai',
@@ -113,9 +93,32 @@ class DashboardController extends Controller
             $examCount = (clone $examQuery)->count();
 
             $activeExamCount = (clone $examQuery)
-                ->where('start_time', '<=', now())
-                ->where('end_time', '>=', now())
+                ->whereDate('exam_date', today())
                 ->count();
+
+            $teacherSubjects = [];
+            if ($teacher) {
+                $exams = Exam::with(['subject', 'classes'])
+                             ->where('teacher_id', $teacher->id)
+                             ->get();
+
+                foreach ($exams as $exam) {
+                    if (!$exam->subject) continue;
+                    
+                    $subjectId = $exam->subject_id;
+                    if (!isset($teacherSubjects[$subjectId])) {
+                        $teacherSubjects[$subjectId] = [
+                            'subject_name' => $exam->subject->name,
+                            'subject_group' => $exam->subject->group ?? 'Wajib',
+                            'classes' => []
+                        ];
+                    }
+
+                    foreach ($exam->classes as $cls) {
+                        $teacherSubjects[$subjectId]['classes'][$cls->id] = $cls->display_name ?? $cls->name;
+                    }
+                }
+            }
 
             return view('dashboard', [
                 'module' => [
@@ -123,10 +126,10 @@ class DashboardController extends Controller
                     'subtitle' => 'Susun bank soal, paket ujian, peserta, sesi, dan pantau hasil penilaian.',
                     'items' => [
                         [
-                            'name' => 'Ujian Saya',
+                            'name' => 'Total Paket Soal',
                             'count' => $examCount,
                             'route' => 'exams.index',
-                            'icon' => 'fas fa-file-alt',
+                            'icon' => 'fas fa-copy',
                             'description' => 'Kelola ujian yang Anda buat.',
                         ],
                         [
@@ -137,12 +140,6 @@ class DashboardController extends Controller
                             'description' => 'Ujian yang sedang berlangsung.',
                         ],
                         [
-                            'name' => 'Monitoring',
-                            'route' => 'monitoring.index',
-                            'icon' => 'fas fa-desktop',
-                            'description' => 'Pantau peserta ujian.',
-                        ],
-                        [
                             'name' => 'Laporan Nilai',
                             'route' => 'reports.index',
                             'icon' => 'fas fa-chart-bar',
@@ -150,6 +147,7 @@ class DashboardController extends Controller
                         ],
                     ],
                 ],
+                'teacherSubjects' => $teacherSubjects,
             ]);
         }
 

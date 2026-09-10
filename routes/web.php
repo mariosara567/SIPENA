@@ -22,6 +22,9 @@ Route::middleware("guest")->group(function () {
     Route::post("/login", [AuthController::class, "store"])->name(
         "login.store",
     );
+    Route::get("/forgot-password", function () {
+        return view("auth.forgot-password");
+    })->name("password.forgot");
 });
 
 Route::middleware("auth")->group(function () {
@@ -29,6 +32,19 @@ Route::middleware("auth")->group(function () {
     Route::post("/logout", [AuthController::class, "destroy"])->name("logout");
 
     Route::middleware("role:administrator,teacher")->group(function () {
+        Route::get("/reports", [ReportController::class, "index"])->name(
+            "reports.index",
+        );
+        Route::get("/reports/exams/{exam}", [ReportController::class, "show"])->name(
+            "reports.show",
+        );
+        Route::get("/reports/exams/{exam}/export", [
+            ReportController::class,
+            "exportExcel",
+        ])->name("reports.export");
+    });
+
+    Route::middleware("role:teacher")->group(function () {
         Route::get("/exams", [ExamManagementController::class, "index"])->name(
             "exams.index",
         );
@@ -55,7 +71,7 @@ Route::middleware("auth")->group(function () {
             ExamManagementController::class,
             "destroy",
         ])->name("exams.destroy");
-Route::get("/exams/{exam}/questions/create", [
+        Route::get("/exams/{exam}/questions/create", [
             QuestionManagementController::class,
             "create",
         ])->name("exams.questions.create");
@@ -88,21 +104,30 @@ Route::get("/exams/{exam}/questions/create", [
         Route::get("/monitoring", [MonitoringController::class, "index"])->name(
             "monitoring.index",
         );
+        Route::get("/monitoring/exams/{exam}", [MonitoringController::class, "show"])->name(
+            "monitoring.show"
+        );
         Route::post("/monitoring/participants/{participant}/unlock", [
             MonitoringController::class,
             "unlock",
         ])->name("monitoring.unlock");
-        Route::get("/reports", [ReportController::class, "index"])->name(
-            "reports.index",
-        );
-        Route::get("/reports/export", [
-            ReportController::class,
-            "export",
-        ])->name("reports.export");
-        Route::get("/reports/export-pdf", [
-            ReportController::class,
-            "exportPdf",
-        ])->name("reports.export.pdf");
+        Route::post("/monitoring/exams/{exam}/generate-token", [
+            MonitoringController::class,
+            "generateToken",
+        ])->name("monitoring.generate_token");
+        Route::post("/monitoring/exams/{exam}/status", [
+            MonitoringController::class,
+            "updateStatus",
+        ])->name("monitoring.update_status");
+
+        Route::get("/exams/{exam}/participants/json", [
+            ExamManagementController::class,
+            "participantsJson",
+        ])->name("exams.participants.json");
+        Route::delete("/exams/{exam}/participants/{participant}", [
+            ExamManagementController::class,
+            "removeParticipant",
+        ])->name("exams.participants.destroy");
 
         Route::post("/exams/{exam}/questions/import", [
             QuestionManagementController::class,
@@ -177,6 +202,14 @@ Route::get("/exams/{exam}/questions/create", [
             AdminUserController::class,
             "students",
         ])->name("admin.students.index");
+        Route::get("/admin/students/template", [
+            AdminUserController::class,
+            "studentTemplate",
+        ])->name("admin.students.template");
+        Route::post("/admin/students/import", [
+            AdminUserController::class,
+            "importStudents",
+        ])->name("admin.students.import");
         Route::post("/admin/students", [
             AdminUserController::class,
             "storeStudent",
@@ -193,14 +226,6 @@ Route::get("/exams/{exam}/questions/create", [
             AdminUserController::class,
             "destroyStudent",
         ])->name("admin.students.destroy");
-Route::get("/admin/students/template", [
-            AdminUserController::class,
-            "studentTemplate",
-        ])->name("admin.students.template");
-        Route::post("/admin/students/import", [
-            AdminUserController::class,
-            "importStudents",
-        ])->name("admin.students.import");
 
     });
 
@@ -213,6 +238,10 @@ Route::get("/admin/students/template", [
         Route::get("/my-exams", [StudentExamController::class, "index"])->name(
             "student.exams.index",
         );
+        Route::get("/my-exams/{participant}/confirm", [
+            StudentExamController::class,
+            "confirm",
+        ])->name("student.exams.confirm");
         Route::post("/my-exams/{participant}/start", [
             StudentExamController::class,
             "start",
@@ -221,6 +250,10 @@ Route::get("/admin/students/template", [
             StudentExamController::class,
             "take",
         ])->name("student.exams.take");
+        Route::get("/my-exams/{participant}/success", [
+            StudentExamController::class,
+            "success",
+        ])->name("student.exams.success");
         Route::post("/my-exams/{participant}/answers", [
             StudentExamController::class,
             "saveAnswer",

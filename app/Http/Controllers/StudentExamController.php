@@ -22,12 +22,30 @@ class StudentExamController extends Controller
 
         $participants = ExamParticipant::query()
             ->where("student_id", $student->id)
+            ->whereNull("finished_at")
             ->with(["exam.subject", "exam.teacher.user"])
             ->withCount("answers")
             ->latest()
             ->get();
 
         return view("student.exams-index", ["participants" => $participants]);
+    }
+
+    public function confirm(Request $request, ExamParticipant $participant): View|RedirectResponse
+    {
+        $student = $request->user()->student;
+        abort_if(!$student || $participant->student_id !== $student->id, 403);
+
+        $exam = $participant->exam()->firstOrFail();
+
+        if ($participant->finished_at) {
+            return redirect()->route("student.exams.index")->with("status", "Ujian ini sudah selesai.");
+        }
+
+        return view("student.exam-confirm", [
+            "participant" => $participant,
+            "exam" => $exam
+        ]);
     }
 
     public function start(Request $request, ExamParticipant $participant): RedirectResponse
@@ -48,13 +66,15 @@ class StudentExamController extends Controller
             ]);
         }
 
-        // Siswa boleh masuk terlambat selama jadwal ujian masih berlangsung.
-        if ($now->lt($exam->start_time)) {
-            return back()->withErrors(["token" => "Ujian belum dimulai. Ujian dimulai pada ".$exam->start_time->format("d M Y H:i")." WIB."]);
-        }
-
-        if ($now->gte($exam->end_time)) {
-            return back()->withErrors(["token" => "Jadwal ujian sudah berakhir pada ".$exam->end_time->format("d M Y H:i")." WIB."]);
+        $start = $exam->start_time ?? $now->copy()->addDay();
+        
+        // Siswa bebas mengerjakan kapan saja pada hari yang dijadwalkan
+        if (!$exam->isInsideSchedule($now)) {
+            if ($now->isBefore($start)) {
+                return back()->withErrors(["token" => "Ujian belum dimulai. Ujian dijadwalkan pada ".($exam->exam_date ? $exam->exam_date->format("d M Y") : 'N/A')."."]);
+            } else {
+                return back()->withErrors(["token" => "Jadwal ujian sudah berakhir pada ".($exam->exam_date ? $exam->exam_date->format("d M Y") : 'N/A')."."]);
+            }
         }
 
         $validated = $request->validate(["token" => ["required","string","size:5"]]);
@@ -67,7 +87,7 @@ class StudentExamController extends Controller
             $participant->update(["started_at"=>$now]);
             AuditLogger::log($request->user(),"exam.started",ExamParticipant::class,$participant->id,[
                 "exam_id"=>$participant->exam_id,
-                "late_minutes"=>max(0,$exam->start_time->diffInMinutes($now,false)),
+                "late_minutes"=>0,
             ]);
         }
 
@@ -111,7 +131,8 @@ class StudentExamController extends Controller
             return redirect()->route("student.exams.index")->with("status","Waktu habis, jawaban disubmit otomatis.");
         }
 
-        if ($now->lt($exam->start_time)) {
+        $start = $exam->start_time ?? $now->copy()->addDay();
+        if ($now->lt($start)) {
             return redirect()->route("student.exams.index")->withErrors(["token"=>"Ujian belum dimulai."]);
         }
 
@@ -192,7 +213,8 @@ class StudentExamController extends Controller
 
         $finishedAt=now();
         $effectiveEnd=$this->effectiveEndTime($participant);
-        if ($finishedAt->lt($participant->exam->start_time)) {
+        $start = $participant->exam->start_time ?? $finishedAt->copy()->addDay();
+        if ($finishedAt->lt($start)) {
             return redirect()->route("student.exams.index")->withErrors(["token"=>"Ujian belum dimulai."]);
         }
         if ($finishedAt->gt($effectiveEnd)) {
@@ -204,14 +226,36 @@ class StudentExamController extends Controller
             "exam_id"=>$participant->exam_id,"score"=>$participant->fresh()->score,
         ]);
 
-        return redirect()->route("student.exams.index")->with("status","Jawaban berhasil dikirim.");
+        return redirect()->route("student.exams.success", $participant);
+    }
+
+    public function success(Request $request, ExamParticipant $participant): View|RedirectResponse
+    {
+        $student = $request->user()->student;
+        abort_if(!$student || $participant->student_id !== $student->id, 403);
+
+        if (!$participant->finished_at) {
+            return redirect()->route("student.exams.index");
+        }
+
+        $participant->load("exam.questions");
+        $exam = $participant->exam;
+        
+        $answeredCount = $participant->answers()->whereNotNull("answer")->count();
+
+        return view("student.exam-success", [
+            "exam" => $exam,
+            "participant" => $participant,
+            "answeredCount" => $answeredCount,
+        ]);
     }
 
     private function effectiveEndTime(ExamParticipant $participant): Carbon
     {
         $participant->loadMissing("exam");
         $durationEnd=$participant->started_at->copy()->addMinutes($participant->exam->duration);
-        return $durationEnd->lt($participant->exam->end_time) ? $durationEnd : $participant->exam->end_time;
+        $end = $participant->exam->end_time ?? now()->copy()->addDay();
+        return $durationEnd->lt($end) ? $durationEnd : $end;
     }
 
     private function finalizeExam(ExamParticipant $participant, Carbon $finishedAt): void

@@ -1,49 +1,34 @@
 <x-layouts.app :title="'Laporan Nilai - My Asssesmen'">
-    <section class="card">
-        <h2 style="margin-top:0;">Filter Laporan</h2>
-        <form method="GET" action="{{ route('reports.index') }}" class="grid two">
-            <label>Kelas
-                <select name="class_id">
-                    <option value="">Semua kelas</option>
-                    @foreach($classes as $class)
-                        <option value="{{ $class->id }}" @selected($classId === $class->id)>{{ $class->display_name }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label>Mata Pelajaran
-                <select name="subject_id">
-                    <option value="">Semua mapel</option>
-                    @foreach($subjects as $subject)
-                        <option value="{{ $subject->id }}" @selected($subjectId === $subject->id)>{{ $subject->name }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <div style="display:flex;gap:8px;align-items:end;">
-                <button class="btn btn-primary" type="submit">Terapkan</button>
-                <a class="btn btn-secondary" href="{{ route('reports.export', ['class_id' => $classId, 'subject_id' => $subjectId]) }}">Export CSV</a>
-                <a class="btn btn-secondary" href="{{ route('reports.export.pdf', ['class_id' => $classId, 'subject_id' => $subjectId]) }}">Export PDF</a>
-            </div>
-        </form>
-    </section>
+    <div style="margin-bottom:24px;">
+        <h1 style="margin:0 0 4px; font-size:24px; color:var(--text);">Daftar Ujian & Laporan Nilai</h1>
+        <p style="margin:0; color:var(--text-muted); font-size:14px;">Pilih salah satu ujian di bawah ini untuk melihat analisis dan mengekspor nilainya.</p>
+    </div>
 
-    <section class="card table-wrap">
-        <table>
-            <thead><tr><th>Siswa</th><th>NIS</th><th>Kelas</th><th>Mapel</th><th>Ujian</th><th>Nilai</th><th>Selesai</th></tr></thead>
-            <tbody>
-            @forelse($rows as $row)
-                <tr>
-                    <td>{{ $row->student_name }}</td>
-                    <td>{{ $row->nisn }}</td>
-                    <td>{{ $row->class_name }}</td>
-                    <td>{{ $row->subject_name }}</td>
-                    <td>{{ $row->exam_title }}</td>
-                    <td>{{ $row->score }}</td>
-                    <td>{{ $row->finished_at?->format('d M Y H:i') }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="7">Belum ada data nilai.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </section>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
+        @forelse($exams as $exam)
+            <a href="{{ route('reports.show', $exam) }}" style="text-decoration:none; display:block;">
+                <div class="card" style="padding:16px; border:1px solid var(--border); border-radius:12px; transition:transform 0.2s, box-shadow 0.2s; cursor:pointer;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-md)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow)'">
+                    
+                    <div style="display:inline-block; padding:4px 10px; border-radius:99px; background:#f0fdf4; color:#16a34a; font-size:11px; font-weight:700; margin-bottom:12px;">
+                        {{ $exam->type ?? 'Ujian' }} / {{ $exam->semester ?? 'Ganjil' }}
+                    </div>
+                    
+                    <h3 style="margin:0 0 4px; font-size:16px; color:var(--text); font-weight:700;">{{ $exam->title }}</h3>
+                    <p style="margin:0 0 12px; font-size:13px; color:var(--text-muted);">
+                        Kelas {{ $exam->classes->pluck('display_name')->join(', ') }}
+                    </p>
+                    
+                    <div style="font-size:11px; color:#94a3b8; margin-top:8px;">
+                        Tahun Pelajaran: {{ date('Y') }}/{{ date('Y')+1 }}
+                    </div>
+                </div>
+            </a>
+        @empty
+            <div style="grid-column:1/-1; padding:48px; text-align:center; background:var(--surface); border-radius:12px; border:2px dashed var(--border);">
+                <i class="fas fa-folder-open" style="font-size:48px; color:var(--border); margin-bottom:16px;"></i>
+                <h3 style="margin:0 0 8px; color:var(--text-muted);">Belum Ada Ujian</h3>
+                <p style="margin:0; color:#94a3b8; font-size:14px;">Ujian yang Anda buat akan muncul di sini.</p>
+            </div>
+        @endforelse
+    </div>
 </x-layouts.app>

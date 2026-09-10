@@ -23,7 +23,7 @@ class AdminAcademicController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:classes,name'],
-            'year' => ['nullable', 'integer', 'min:1900', 'max:2100'],
+            'level' => ['required', 'integer', 'in:10,11,12'],
         ]);
 
         $class = SchoolClass::query()->create($validated);
@@ -36,7 +36,7 @@ class AdminAcademicController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:classes,name,'.$class->id],
-            'year' => ['nullable', 'integer', 'min:1900', 'max:2100'],
+            'level' => ['required', 'integer', 'in:10,11,12'],
         ]);
 
         $class->update($validated);
@@ -60,7 +60,7 @@ class AdminAcademicController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:subjects,name'],
-            'code' => ['nullable', 'string', 'max:20', 'unique:subjects,code'],
+            'code' => ['nullable', 'string', 'max:4', 'unique:subjects,code'],
             'group' => ['nullable', 'string', 'max:50'],
         ]);
 
@@ -74,7 +74,7 @@ class AdminAcademicController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100', 'unique:subjects,name,'.$subject->id],
-            'code' => ['nullable', 'string', 'max:20', 'unique:subjects,code,'.$subject->id],
+            'code' => ['nullable', 'string', 'max:4', 'unique:subjects,code,'.$subject->id],
             'group' => ['nullable', 'string', 'max:50'],
         ]);
 

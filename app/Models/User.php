@@ -24,7 +24,24 @@ class User extends Authenticatable
         'username',
         'role',
         'password',
+        'gender',
     ];
+
+    /**
+     * Get user initials.
+     */
+    public function getInitials(): string
+    {
+        $name = trim($this->name);
+        if (empty($name)) return '';
+        
+        $parts = explode(' ', $name);
+        if (count($parts) === 1) {
+            return strtoupper(substr($parts[0], 0, 1));
+        }
+        
+        return strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
+    }
 
     /**
      * The attributes that should be hidden for serialization.
