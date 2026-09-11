@@ -31,6 +31,9 @@
         .portal-content {
             flex: 1;
             min-width: 300px;
+            width: auto;
+            margin: 0;
+            padding: 0;
         }
         .exam-card {
             background: #fff;
@@ -47,6 +50,16 @@
             border-color: var(--primary);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             transform: translateY(-2px);
+        }
+        @media (max-width: 720px) {
+            .page-warning { padding:12px !important; align-items:flex-start !important; margin-bottom:16px !important; }
+            .portal-layout { gap:16px; }
+            .portal-sidebar, .portal-content { flex-basis:100%; min-width:0; width:100%; }
+            .portal-sidebar-header { height:76px; }
+            .portal-avatar { width:76px; height:76px; margin-top:-38px; }
+            .exam-card { padding:16px; }
+            .exam-card > div:first-child { flex-direction:column; gap:6px; }
+            .exam-card > div:last-child { grid-template-columns:1fr !important; gap:10px !important; }
         }
     </style>
 

@@ -1257,6 +1257,10 @@
                 top: 0;
                 bottom: 0;
                 width: 280px;
+                max-height: none;
+                height: 100dvh;
+                padding: 20px 0;
+                overflow-y: auto;
                 transition: left 0.3s ease;
                 z-index: 1000;
             }
@@ -1296,6 +1300,26 @@
             }
             .card {
                 padding: 16px;
+            }
+
+            .table-wrap {
+                border-radius: 10px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .table-wrap table { min-width: 640px; }
+            .modal { padding: 16px; }
+            .modal-content { max-height: calc(100dvh - 32px); overflow-y: auto; }
+            #toast-container { top: 76px !important; right: 12px !important; left: 12px; }
+            #toast-container > div { width: 100%; }
+
+            /* Inline desktop grids used by management pages. */
+            main [style*="grid-template-columns:1fr 1fr"],
+            main [style*="grid-template-columns: 1fr 1fr"],
+            main [style*="grid-template-columns:repeat(auto-fill"] {
+                grid-template-columns: 1fr !important;
+            }
+            main [style*="display:flex"][style*="justify-content:space-between"] {
+                gap: 12px !important;
             }
         }
     </style>

@@ -1,6 +1,7 @@
 <x-layouts.student :title="$exam->title.' - My Asssesmen'" :fullscreen="true">
     <style>
         body { background: #f8fafc; margin: 0; padding: 0; }
+        .exam-secure { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
         .tka-header {
             background: #0284c7; color: #fff; padding: 12px 24px;
             display: flex; justify-content: space-between; align-items: center;
@@ -107,12 +108,37 @@
         /* Modals (Finish, Lock) */
         .tka-alert-modal { background: #fff; border-radius: 12px; width: 100%; max-width: 480px; text-align: center; overflow: hidden; }
         .tka-alert-body { padding: 32px 24px; }
+        .tka-security-modal { max-width: 460px; }
         
         @media(max-width:700px){
+            .tka-header { height:64px; padding:8px 12px; gap:8px; }
+            .tka-header-left { min-width:0; flex:1; gap:8px; font-size:12px; }
+            .tka-header-left span:first-child { display:none; }
+            .tka-header-left span:nth-child(2) { display:none; }
+            .tka-header-left span:last-child { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+            .tka-header-right { gap:6px; }
+            .tka-btn-nav { width:42px; height:42px; justify-content:center; padding:0; font-size:0; }
+            .tka-btn-nav i { font-size:16px; }
+            .tka-timer { padding:8px 10px; font-size:13px; }
+            .tka-timer i { display:none; }
+            .tka-subheader { top:64px; padding:9px 12px; min-height:48px; }
+            .tka-badge { padding:5px 9px; font-size:11px; }
+            .tka-font-ctrl { gap:7px; font-size:11px; }
+            .tka-content { margin:112px auto 132px; padding:20px 14px; font-size:var(--question-font-size, 15px); }
+            .tka-question-text { margin-bottom:22px; line-height:1.65; }
+            .tka-question-img { max-height:280px; margin-bottom:18px; }
+            .tka-option { gap:12px; padding:13px; margin-bottom:10px; border-radius:10px; }
+            .tka-option-letter { width:28px; height:28px; flex-basis:28px; border-radius:7px; }
+            .tka-option-text { margin-top:3px; font-size:14px; }
             .tka-grid { grid-template-columns: repeat(5, 1fr); }
-            .tka-header-left span:first-child { display: none; }
-            .tka-footer { padding: 12px; gap: 8px; }
-            .tka-btn { padding: 10px 16px; font-size: 13px; }
+            .tka-footer { padding:10px 12px; gap:8px; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+            .tka-footer .tka-btn { width:100%; padding:10px 8px; font-size:12px; justify-content:center; }
+            .tka-btn-doubt { grid-column:1 / -1; grid-row:2; justify-content:center; padding:9px 12px; font-size:12px; }
+            .tka-overlay { padding:12px; align-items:flex-end; }
+            .tka-modal, .tka-alert-modal { max-height:calc(100vh - 24px); overflow:auto; border-radius:12px; }
+            .tka-modal-header, .tka-modal-body { padding:14px; }
+            .tka-legend { flex-wrap:wrap; gap:9px; margin-bottom:16px; font-size:11px; }
+            .tka-alert-body { padding:24px 18px; }
         }
     </style>
 
@@ -140,7 +166,7 @@
         </div>
     </div>
 
-    <main class="tka-content" id="question-container" style="--question-font-size: 15px;">
+    <main class="tka-content exam-secure" id="question-container" style="--question-font-size: 15px;">
         @foreach($exam->questions as $question)
             @php($saved = $answers->get($question->id)?->answer)
             <div class="exam-question {{ $loop->first ? 'active' : '' }}" data-index="{{ $loop->index }}">
@@ -238,6 +264,18 @@
         </div>
     </div>
 
+    <!-- Secure mode is required before questions can be accessed. -->
+    <div class="tka-overlay open" id="security-modal">
+        <div class="tka-alert-modal tka-security-modal">
+            <div class="tka-alert-body">
+                <i class="fas fa-shield-halved" style="font-size:56px; color:#0284c7; margin-bottom:16px;"></i>
+                <h2 style="margin:0 0 8px; font-size:20px; color:#0f172a;">Aktifkan Mode Aman</h2>
+                <p style="color:#64748b; font-size:14px; line-height:1.6; margin-bottom:24px;">Ujian dijalankan dalam layar penuh. Jangan berpindah tab, aplikasi, atau keluar dari layar penuh karena sesi akan dikunci.</p>
+                <button type="button" class="tka-btn tka-btn-next" id="start-secure" style="width:100%; justify-content:center;">Mulai Ujian</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Core Variables
         const csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -246,9 +284,42 @@
         let current = 0;
         let examActive = true;
         let reporting = false;
+        let secureMode = false;
         const doubts = new Set();
         let currentFontSize = 15;
         const maxQuestions = questions.length;
+
+        const reportViolation = async (reason) => {
+            if (!examActive || reporting) return;
+            reporting = true;
+            examActive = false;
+            try {
+                await fetch(@json(route('student.exams.violation', $participant)), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                    body: JSON.stringify({ reason }),
+                    keepalive: true,
+                });
+            } finally {
+                document.querySelectorAll('.tka-overlay').forEach(m => m.classList.remove('open'));
+                document.getElementById('lock-modal').classList.add('open');
+                reporting = false;
+            }
+        };
+
+        const enterSecureMode = async () => {
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                }
+                secureMode = true;
+                document.getElementById('security-modal').classList.remove('open');
+            } catch (e) {
+                alert('Browser menolak layar penuh. Izinkan mode layar penuh untuk memulai ujian.');
+            }
+        };
+
+        document.getElementById('start-secure').onclick = enterSecureMode;
 
         // Font Controls
         window.changeFontSize = (step) => {
@@ -417,21 +488,33 @@
         setInterval(tick, 1000);
         tick();
 
-        // Anti cheat
-        document.addEventListener('visibilitychange', async () => {
-            if(document.hidden && examActive && !reporting) {
-                reporting = true;
-                try {
-                    await fetch(@json(route('student.exams.violation', $participant)), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-                        body: JSON.stringify({ reason: 'Meninggalkan halaman ujian / membuka tab lain' })
-                    });
-                    document.getElementById('lock-modal').classList.add('open');
-                } finally {
-                    reporting = false;
-                }
+        // Anti-cheat: browser cannot block a device-level screenshot, but it can
+        // block common browser actions and lock the session when they are attempted.
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('dragstart', e => e.preventDefault());
+        document.addEventListener('selectstart', e => e.preventDefault());
+        document.addEventListener('copy', e => e.preventDefault());
+        document.addEventListener('cut', e => e.preventDefault());
+        document.addEventListener('paste', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            const key = e.key.toLowerCase();
+            const blocked = (e.ctrlKey || e.metaKey) && ['c', 'x', 'v', 'p', 's', 'u', 't', 'n', 'w', 'l'].includes(key);
+            if (blocked || e.key === 'F12') {
+                e.preventDefault();
+                return;
             }
+            if (e.key === 'PrintScreen') {
+                e.preventDefault();
+                reportViolation('Mencoba mengambil tangkapan layar');
+            }
+        });
+
+        document.addEventListener('visibilitychange', async () => {
+            if (document.hidden) reportViolation('Meninggalkan halaman ujian / membuka tab lain');
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (secureMode && !document.fullscreenElement) reportViolation('Keluar dari mode layar penuh');
         });
     </script>
 </x-layouts.student>

@@ -371,8 +371,25 @@
         }
 
         @media (max-width: 600px) {
-            .container { padding: 0 20px; }
-            .hero-section { padding-left: 20px; padding-right: 20px; }
+            .container { padding: 0 16px; }
+            .header-inner { padding-top:12px; padding-bottom:12px; }
+            .brand-logo { width:34px; height:34px; font-size:17px; }
+            .brand-text { font-size:18px; }
+            .btn-masuk { padding:9px 13px; font-size:13px; }
+            .hero-section { padding:36px 16px 52px; gap:32px; min-height:auto; }
+            .hero-text h1 { font-size:36px; margin-bottom:16px; letter-spacing:-.5px; }
+            .hero-text p { font-size:15px; margin-bottom:26px; }
+            .btn-hero { width:100%; justify-content:center; padding:13px 18px; }
+            .hero-illustration { border-radius:16px; }
+            .hero-illustration i { font-size:88px; }
+            .features, .about-section { padding:56px 0; }
+            .section-header { margin-bottom:30px; }
+            .section-header h2 { font-size:28px; }
+            .features-grid { grid-template-columns:1fr; gap:16px; }
+            .feature-card { padding:24px; }
+            .about-illustration { height:250px; }
+            .dev-card { padding:18px; gap:14px; }
+            .dev-icon { width:48px; height:48px; font-size:21px; }
             .nav-link { display: none; }
         }
     </style>
