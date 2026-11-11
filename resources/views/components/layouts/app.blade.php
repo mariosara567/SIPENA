@@ -1351,7 +1351,7 @@
                         @if(auth()->user()->role === 'teacher')
                             <li>
                                 <a href="{{ route('exams.index') }}" class="{{ request()->routeIs('exams.*') ? 'active' : '' }}">
-                                    <i class="fas fa-clipboard-list"></i> Ujian & Token
+                                    <i class="fas fa-clipboard-list"></i> Ujian
                                 </a>
                             </li>
                             <li>

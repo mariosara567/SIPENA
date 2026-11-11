@@ -246,13 +246,59 @@ class AdminUserController extends Controller
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle("Data Guru");
         $sheet->fromArray([
-            ["nama", "nip", "subject"],
-            ["Yohanes Carlos", "198001012010011001", "Matematika"],
+            ["nama", "nip", "jenis_kelamin", "subject"],
+            ["Yohanes Carlos", "198001012010011001", "L", "Matematika"],
         ]);
-        $sheet->getStyle("A1:C1")->getFont()->setBold(true);
+
+        // NIP as text to preserve leading zeros
         $sheet->getStyle("B:B")->getNumberFormat()->setFormatCode("@");
-        foreach (["A" => 34, "B" => 20, "C" => 28] as $column => $width) $sheet->getColumnDimension($column)->setWidth($width);
+
+        // Write gender helper column F
+        $sheet->setCellValue("F1", "L");
+        $sheet->setCellValue("F2", "P");
+        $sheet->getColumnDimension("F")->setVisible(false);
+
+        // Gender dropdown validation
+        $genderValidation = new DataValidation();
+        $genderValidation->setType(DataValidation::TYPE_LIST);
+        $genderValidation->setErrorStyle(DataValidation::STYLE_STOP);
+        $genderValidation->setAllowBlank(false);
+        $genderValidation->setShowDropDown(false);
+        $genderValidation->setShowInputMessage(false);
+        $genderValidation->setShowErrorMessage(true);
+        $genderValidation->setErrorTitle("Tidak valid");
+        $genderValidation->setError("Pilih L (Laki-laki) atau P (Perempuan) dari dropdown.");
+        $genderValidation->setFormula1('$F$1:$F$2');
+        for ($row = 2; $row <= 300; $row++) {
+            $sheet->getCell("C{$row}")->setDataValidation(clone $genderValidation);
+        }
+
+        // Header styling
+        $sheet->getStyle("A1:D1")->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+            'fill'      => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF2563EB']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                            'vertical'   => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                                             'color'       => ['argb' => 'FF1E40AF']]],
+        ]);
+        $sheet->getRowDimension(1)->setRowHeight(26);
+
+        // Example row styling
+        $sheet->getStyle("A2:D2")->applyFromArray([
+            'fill'    => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['argb' => 'FFDBEAFE']],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN, 'color' => ['argb' => 'FFBFDBFE']]],
+            'font'    => ['italic' => true],
+        ]);
+
+        foreach (["A" => 34, "B" => 22, "C" => 16, "D" => 28] as $column => $width) {
+            $sheet->getColumnDimension($column)->setWidth($width);
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save("php://output");
         }, "template-import-guru-my_asssesmen.xlsx");
@@ -260,30 +306,123 @@ class AdminUserController extends Controller
 
     public function importTeachers(Request $request): RedirectResponse
     {
-        $validated = $request->validate(["teachers_file" => ["required", "file", "max:5120", "mimes:xlsx,xls,csv"]]);
+        $validated = $request->validate([
+            "teachers_file" => ["required", "file", "max:5120", "mimes:xlsx,xls,csv"]
+        ]);
+
         try {
             $rows = IOFactory::load($validated["teachers_file"]->getRealPath())->getActiveSheet()->toArray();
         } catch (Throwable) {
             return back()->withErrors(["teachers_file" => "File tidak dapat dibaca. Gunakan template Excel My Asssesmen."]);
         }
-        if (count($rows) < 2) return back()->withErrors(["teachers_file" => "File Excel belum memiliki data guru."]);
-        $header = array_map(fn($v) => strtolower(trim((string)$v)), $rows[0]);
-        foreach (["nama", "nip", "subject"] as $required) if (!in_array($required, $header, true)) return back()->withErrors(["teachers_file" => "Kolom {$required} wajib ada. Gunakan template terbaru."]);
-        $map = array_flip($header); $records=[]; $reserved=[];
-        foreach (array_slice($rows,1) as $index=>$row) {
-            $excelRow=$index+2; $name=trim((string)($row[$map["nama"]]??"")); $nip=trim((string)($row[$map["nip"]]??"")); $subject=trim((string)($row[$map["subject"]]??""));
-            if ($name==="" && $nip==="" && $subject==="") continue;
-            if ($name==="") return back()->withErrors(["teachers_file"=>"Baris {$excelRow}: nama wajib diisi."]);
-            if ($nip!=="" && !preg_match('/^\d{18}$/',$nip)) return back()->withErrors(["teachers_file"=>"Baris {$excelRow}: NIP harus tepat 18 digit jika diisi."]);
-            if ($nip!=="" && Teacher::query()->where("nip",$nip)->exists()) return back()->withErrors(["teachers_file"=>"Baris {$excelRow}: NIP {$nip} sudah terdaftar."]);
-            $first=preg_replace('/[^a-z0-9]/','',Str::lower(Str::before(trim($name),' '))); $first=$first?:'guru';
-            $username=$first; $n=1; while(User::query()->where("username",$username)->exists() || in_array($username,$reserved,true)){ $n++; $username=$first.$n; } $reserved[]=$username;
-            $records[]=compact("name","nip","subject","username");
+
+        if (count($rows) < 2) {
+            return back()->withErrors(["teachers_file" => "File Excel belum memiliki data guru."]);
         }
-        $created=0;
-        DB::transaction(function() use($records,&$created):void{ foreach($records as $r){ $password=$r["nip"]!==""?$r["nip"]:$r["username"]; $user=User::query()->create(["name"=>$r["name"],"username"=>$r["username"],"role"=>"teacher","password"=>Hash::make($password)]); Teacher::query()->create(["user_id"=>$user->id,"nip"=>$r["nip"]?:null,"subject"=>$r["subject"]?:null]); $created++; }});
-        AuditLogger::log($request->user(),"teacher.imported",Teacher::class,null,["created"=>$created]);
-        return back()->with("status","{$created} guru berhasil diimpor. Password awal menggunakan NIP jika tersedia, jika tidak menggunakan username.");
+
+        $header = array_map(fn($v) => strtolower(trim((string)$v)), $rows[0]);
+        $expected = ["nama"];
+        foreach ($expected as $required) {
+            if (!in_array($required, $header, true)) {
+                return back()->withErrors(["teachers_file" => "Kolom '{$required}' wajib ada. Gunakan template terbaru."]);
+            }
+        }
+
+        $map = array_flip($header);
+        $hasNip = isset($map["nip"]);
+        $hasGender = isset($map["jenis_kelamin"]);
+        $hasSubject = isset($map["subject"]);
+
+        $records = [];
+        $failures = [];
+        $reserved = [];
+
+        foreach (array_slice($rows, 1) as $index => $row) {
+            $excelRow = $index + 2;
+            $name     = trim((string)($row[$map["nama"]] ?? ""));
+            $nip      = $hasNip ? preg_replace('/[^0-9]/', '', trim((string)($row[$map["nip"]] ?? ""))) : "";
+            $gender   = $hasGender ? strtoupper(trim((string)($row[$map["jenis_kelamin"]] ?? "L"))) : "L";
+            $subject  = $hasSubject ? trim((string)($row[$map["subject"]] ?? "")) : "";
+
+            if ($name === "" && $nip === "" && $subject === "") continue;
+
+            $rowErrors = [];
+
+            if ($name === "") {
+                $rowErrors[] = "nama wajib diisi";
+            }
+
+            if ($nip !== "") {
+                if (!preg_match('/^\d{18}$/', $nip)) {
+                    $rowErrors[] = "NIP harus tepat 18 digit angka (terdeteksi: '{$nip}')";
+                } elseif (Teacher::query()->where("nip", $nip)->exists()) {
+                    $rowErrors[] = "NIP {$nip} sudah terdaftar di sistem";
+                }
+            }
+
+            if (!in_array($gender, ['L', 'P'])) {
+                $gender = 'L'; // default ke L jika format tidak sesuai
+            }
+
+            // Generate unique username
+            $first = preg_replace('/[^a-z0-9]/', '', Str::lower(Str::before(trim($name), ' ')));
+            $first = $first ?: 'guru';
+            $username = $first;
+            $n = 1;
+            while (User::query()->where("username", $username)->exists() || in_array($username, $reserved, true)) {
+                $n++;
+                $username = $first . $n;
+            }
+            $reserved[] = $username;
+
+            if (count($rowErrors) > 0) {
+                $failures[] = "Baris {$excelRow} ({$name}): " . implode(", ", $rowErrors);
+                continue;
+            }
+
+            $records[] = compact("name", "nip", "gender", "subject", "username");
+        }
+
+        $created = 0;
+        $importErrors = [];
+
+        foreach ($records as $r) {
+            try {
+                DB::transaction(function () use ($r): void {
+                    $password = $r["nip"] !== "" ? $r["nip"] : $r["username"];
+                    $user = User::query()->create([
+                        "name"     => $r["name"],
+                        "username" => $r["username"],
+                        "role"     => "teacher",
+                        "gender"   => $r["gender"],
+                        "password" => Hash::make($password),
+                    ]);
+
+                    Teacher::query()->create([
+                        "user_id" => $user->id,
+                        "nip"     => $r["nip"] ?: null,
+                    ]);
+                });
+                $created++;
+            } catch (Throwable $e) {
+                $importErrors[] = "Gagal import {$r['name']}: " . $e->getMessage();
+            }
+        }
+
+        $failures = array_merge($failures, $importErrors);
+
+        AuditLogger::log($request->user(), "teacher.imported", Teacher::class, null, [
+            "created" => $created,
+            "failed"  => count($failures),
+        ]);
+
+        $summary = [
+            'created'  => $created,
+            'failed'   => count($failures),
+            'failures' => $failures,
+        ];
+
+        return back()->with("status_import", json_encode($summary));
     }
 
     public function teachers(): View

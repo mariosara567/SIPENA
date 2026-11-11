@@ -153,10 +153,15 @@ class ExamManagementController extends Controller
         return view("exams.show", ["exam" => $exam]);
     }
 
-    public function edit(Request $request, Exam $exam): View
+    public function edit(Request $request, Exam $exam): View|RedirectResponse
     {
         $this->ensureCanManageExam($request, $exam);
-        $this->ensureExamEditable($exam);
+
+        // Jika ada peserta yang sudah mulai, redirect ramah (bukan abort error)
+        if ($exam->participants()->whereNotNull("started_at")->exists()) {
+            return redirect()->route('exams.show', $exam)
+                ->withErrors(['exam' => 'Ujian tidak dapat diedit karena sudah ada peserta yang mulai mengerjakan.']);
+        }
 
         $user = $request->user();
         $exam->load('classes');
@@ -173,7 +178,12 @@ class ExamManagementController extends Controller
     public function update(Request $request, Exam $exam): RedirectResponse
     {
         $this->ensureCanManageExam($request, $exam);
-        $this->ensureExamEditable($exam);
+
+        // Jika sudah ada peserta yang mulai, redirect ramah
+        if ($exam->participants()->whereNotNull("started_at")->exists()) {
+            return redirect()->route('exams.show', $exam)
+                ->withErrors(['exam' => 'Ujian tidak dapat diubah karena sudah ada peserta yang mulai mengerjakan.']);
+        }
 
         $user = $request->user();
 
@@ -331,7 +341,7 @@ class ExamManagementController extends Controller
             return;
         }
 
-        if ($user->isTeacher() && $exam->teacher_id === $user->teacher->id) {
+        if ($user->isTeacher() && $exam->teacher_id === $user->teacher?->id) {
             return;
         }
 

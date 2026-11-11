@@ -122,7 +122,7 @@ class MonitoringController extends Controller
         ]);
     }
 
-    public function show(Request $request, Exam $exam): View
+    public function show(Request $request, Exam $exam): View|JsonResponse
     {
         $user = $request->user();
         abort_unless(
@@ -136,6 +136,25 @@ class MonitoringController extends Controller
             ->where('exam_id', $exam->id)
             ->with(['student.user'])
             ->get();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'token' => $exam->token,
+                'total' => $participants->count(),
+                'participants' => $participants->map(function ($p, $idx) {
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->student->user->name ?? '-',
+                        'nisn' => $p->student->nisn ?? '-',
+                        'is_locked' => (bool) $p->is_locked,
+                        'finished_at' => $p->finished_at ? $p->finished_at->format('H:i') : null,
+                        'started_at' => $p->started_at ? $p->started_at->format('H:i') : null,
+                        'violation_count' => (int) $p->violation_count,
+                        'unlock_url' => route('monitoring.unlock', $p),
+                    ];
+                }),
+            ]);
+        }
 
         return view('monitoring.show', compact('exam', 'participants'));
     }
@@ -190,7 +209,7 @@ class MonitoringController extends Controller
     public function unlock(
         Request $request,
         ExamParticipant $participant,
-    ): RedirectResponse {
+    ): RedirectResponse|JsonResponse {
         $participant->load("exam");
         $user = $request->user();
         abort_unless(
@@ -215,6 +234,10 @@ class MonitoringController extends Controller
                 "exam_id" => $participant->exam_id,
             ],
         );
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Kunci ujian siswa berhasil dibuka.']);
+        }
 
         return back()->with("status", "Kunci ujian siswa berhasil dibuka.");
     }

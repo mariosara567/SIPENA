@@ -76,8 +76,8 @@
         <aside class="portal-sidebar">
             <div class="portal-sidebar-header"></div>
             @php
-                $gender = auth()->user()->gender ?? 'Laki-laki';
-                $avatarSrc = $gender === 'Perempuan' ? asset('images/girl.png') : asset('images/boy.png');
+                $gender = strtoupper(auth()->user()->gender ?? '');
+                $avatarSrc = in_array($gender, ['P', 'PEREMPUAN']) ? asset('images/girl.png') : asset('images/boy.png');
             @endphp
             <img src="{{ $avatarSrc }}" alt="Avatar" class="portal-avatar" onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode(auth()->user()->name) }}&background=0284c7&color=fff'">
             

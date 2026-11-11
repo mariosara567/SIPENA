@@ -17,7 +17,14 @@ class ParticipantManagementController extends Controller
         $this->ensureCanManageExam($request, $exam);
 
         $selectedClassId = $request->query('class_id');
-        $studentsQuery = Student::query()->with(['user', 'schoolClass'])->orderBy('nisn');
+
+        // Ambil ID siswa yang SUDAH terdaftar di ujian ini
+        $enrolledStudentIds = $exam->participants()->pluck('student_id');
+
+        $studentsQuery = Student::query()
+            ->with(['user', 'schoolClass'])
+            ->whereNotIn('id', $enrolledStudentIds)   // Hanya yang belum terdaftar
+            ->orderBy('nisn');
 
         if ($selectedClassId) {
             $studentsQuery->where('class_id', $selectedClassId);
@@ -28,6 +35,7 @@ class ParticipantManagementController extends Controller
             'classes' => SchoolClass::query()->orderBy('name')->get(),
             'students' => $studentsQuery->get(),
             'selectedClassId' => $selectedClassId,
+            'enrolledCount' => $enrolledStudentIds->count(),
         ]);
     }
 

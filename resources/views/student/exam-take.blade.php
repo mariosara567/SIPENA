@@ -462,15 +462,19 @@
             document.getElementById('submit-form').submit();
         };
 
-        // Timer Logic
-        const endTimeStr = @json($endTimeIso);
-        const end = new Date(endTimeStr).getTime();
+        // Timer Logic (kebal dari selisih jam perangkat siswa/timezone)
+        const initialRemainingSeconds = Number(@json($remainingSeconds ?? 0));
         const timerEl = document.getElementById('timer');
+        const startTimestamp = performance.now();
+        let timerFinished = false;
         
         const tick = async () => {
-            const now = new Date().getTime();
-            const d = end - now;
-            if (d <= 0) {
+            if (timerFinished) return;
+            const elapsedSeconds = Math.floor((performance.now() - startTimestamp) / 1000);
+            const remaining = Math.max(0, initialRemainingSeconds - elapsedSeconds);
+
+            if (remaining <= 0) {
+                timerFinished = true;
                 timerEl.textContent = "00:00:00";
                 const ok = await flushPending();
                 if (ok) {
@@ -479,10 +483,9 @@
                 }
                 return;
             }
-            const totalS = Math.floor(d / 1000);
-            const h = Math.floor(totalS / 3600);
-            const m = Math.floor((totalS % 3600) / 60);
-            const s = Math.floor(totalS % 60);
+            const h = Math.floor(remaining / 3600);
+            const m = Math.floor((remaining % 3600) / 60);
+            const s = Math.floor(remaining % 60);
             timerEl.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
         };
         setInterval(tick, 1000);

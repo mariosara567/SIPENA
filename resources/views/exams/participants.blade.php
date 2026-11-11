@@ -1,10 +1,23 @@
 <x-layouts.app :title="'Tambah Peserta - My Asssesmen'">
-    <section class="card">
-        <h1 style="margin:0 0 8px;">Tambah Peserta Ujian</h1>
-        <p style="margin:0;color:#64748b;">Ujian: {{ $exam->title }}</p>
+    <a href="{{ route('exams.show', $exam) }}" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none; color:#64748b; font-weight:600; font-size:15px; margin-bottom:16px; transition:color 0.2s;">
+        <span style="display:flex; align-items:center; justify-content:center; width:24px; height:24px; background:var(--primary); color:white; border-radius:50%; font-size:12px;">
+            <i class="fas fa-arrow-left"></i>
+        </span>
+        Kembali ke Detail Ujian
+    </a>
+
+    <section class="card" style="padding:20px 24px;">
+        <h1 style="margin:0 0 4px;">Tambah Peserta Ujian</h1>
+        <p style="margin:0;color:#64748b; font-size:14px;">Ujian: <strong>{{ $exam->title }}</strong></p>
+        @if(isset($enrolledCount) && $enrolledCount > 0)
+            <div style="margin-top:10px; display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#2563eb; padding:5px 12px; border-radius:99px; font-size:13px; font-weight:600;">
+                <i class="fas fa-info-circle"></i>
+                {{ $enrolledCount }} siswa sudah terdaftar dan tidak ditampilkan di bawah
+            </div>
+        @endif
     </section>
 
-    <section class="card grid">
+    <section class="card grid" style="margin-top:16px;">
         <form method="GET" action="{{ route('exams.participants.create', $exam) }}" class="grid two">
             <label>Filter Kelas
                 <select name="class_id">
@@ -44,16 +57,27 @@
                                 <td>{{ $student->schoolClass->display_name }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4">Tidak ada data siswa.</td></tr>
+                            <tr>
+                                <td colspan="4" style="padding:24px; text-align:center; color:#64748b;">
+                                    <i class="fas fa-check-circle" style="color:#22c55e; margin-right:6px;"></i>
+                                    Semua siswa di kelas ini sudah terdaftar sebagai peserta ujian ini.
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div style="display:flex;gap:10px;">
-                <button class="btn btn-primary" type="submit">Tambahkan Peserta</button>
-                <a class="btn btn-secondary" href="{{ route('exams.show', $exam) }}">Selesai</a>
-            </div>
+            @if($students->isNotEmpty())
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-primary" type="submit">Tambahkan Peserta</button>
+                    <a class="btn btn-secondary" href="{{ route('exams.show', $exam) }}">Selesai</a>
+                </div>
+            @else
+                <div>
+                    <a class="btn btn-secondary" href="{{ route('exams.show', $exam) }}">Kembali ke Detail Ujian</a>
+                </div>
+            @endif
         </form>
     </section>
 </x-layouts.app>

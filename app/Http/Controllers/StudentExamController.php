@@ -122,11 +122,11 @@ class StudentExamController extends Controller
             return redirect()->route("student.exams.index")->withErrors(["token"=>"Sesi ujian terkunci. Guru/pengawas harus membuka kunci sebelum Anda dapat melanjutkan."]);
         }
 
-        // Batas waktu peserta adalah yang lebih awal antara durasi pribadi dan jadwal ujian.
-        $durationEnd = $participant->started_at->copy()->addMinutes($exam->duration);
-        $endTime = $durationEnd->lt($exam->end_time) ? $durationEnd : $exam->end_time;
+        // Batas waktu peserta adalah durasi sejak mulai mengerjakan
+        $endTime = $this->effectiveEndTime($participant);
+        $remainingSeconds = max(0, $now->diffInSeconds($endTime, false));
 
-        if ($now->gte($endTime)) {
+        if ($remainingSeconds <= 0) {
             $this->finalizeExam($participant,$now);
             return redirect()->route("student.exams.index")->with("status","Waktu habis, jawaban disubmit otomatis.");
         }
@@ -141,6 +141,7 @@ class StudentExamController extends Controller
             "exam"=>$exam,
             "answers"=>$participant->answers->keyBy("question_id"),
             "endTimeIso"=>$endTime->toIso8601String(),
+            "remainingSeconds"=>$remainingSeconds,
         ]);
     }
 
@@ -253,9 +254,15 @@ class StudentExamController extends Controller
     private function effectiveEndTime(ExamParticipant $participant): Carbon
     {
         $participant->loadMissing("exam");
-        $durationEnd=$participant->started_at->copy()->addMinutes($participant->exam->duration);
-        $end = $participant->exam->end_time ?? now()->copy()->addDay();
-        return $durationEnd->lt($end) ? $durationEnd : $end;
+        $duration = max((int) ($participant->exam->duration ?? 60), 1);
+        $startedAt = $participant->started_at ?? now();
+        $durationEnd = $startedAt->copy()->addMinutes($duration);
+
+        if ($participant->exam->end_time && $durationEnd->gt($participant->exam->end_time)) {
+            return $participant->exam->end_time;
+        }
+
+        return $durationEnd;
     }
 
     private function finalizeExam(ExamParticipant $participant, Carbon $finishedAt): void

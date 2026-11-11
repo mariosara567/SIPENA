@@ -1,20 +1,95 @@
 <x-layouts.app :title="'Akun Guru - My Asssesmen'">
+
+    {{-- Import Result Modal --}}
+    @if(session('status_import'))
+    @php
+        $importResult = json_decode(session('status_import'), true);
+        $importCreated = $importResult['created'] ?? 0;
+        $importFailed  = $importResult['failed']  ?? 0;
+        $importFailures = $importResult['failures'] ?? [];
+    @endphp
+    <div id="importSuccessModal" style="position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);"></div>
+        <div style="position:relative;background:#fff;border-radius:20px;padding:36px 32px;max-width:480px;width:92%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.2);max-height:85vh;overflow-y:auto;">
+            @if($importFailed === 0)
+                <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+                <h3 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 8px;">Import Berhasil!</h3>
+                <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0 0 20px;">
+                    <strong style="color:#16a34a;font-size:18px;">{{ $importCreated }}</strong> guru berhasil diimpor.<br>
+                    Password awal = <strong>NIP</strong> (atau username jika NIP kosong).
+                </p>
+            @elseif($importCreated > 0)
+                <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+                <h3 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 8px;">Import Selesai dengan Peringatan</h3>
+                <div style="display:flex;gap:16px;justify-content:center;margin:16px 0;">
+                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 20px;">
+                        <div style="font-size:24px;font-weight:700;color:#16a34a;">{{ $importCreated }}</div>
+                        <div style="font-size:12px;color:#15803d;font-weight:500;">Berhasil</div>
+                    </div>
+                    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 20px;">
+                        <div style="font-size:24px;font-weight:700;color:#dc2626;">{{ $importFailed }}</div>
+                        <div style="font-size:12px;color:#b91c1c;font-weight:500;">Gagal / Dilewati</div>
+                    </div>
+                </div>
+            @else
+                <div style="font-size:48px;margin-bottom:12px;">❌</div>
+                <h3 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 8px;">Import Gagal</h3>
+                <p style="color:#64748b;font-size:14px;margin:0 0 12px;">Tidak ada guru yang berhasil diimpor. Periksa data Anda.</p>
+            @endif
+
+            @if(count($importFailures) > 0)
+                <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px;text-align:left;margin-bottom:20px;max-height:200px;overflow-y:auto;">
+                    <div style="font-size:13px;font-weight:700;color:#dc2626;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><i class="fas fa-exclamation-triangle"></i> Data yang tidak berhasil diimpor:</div>
+                    @foreach($importFailures as $fail)
+                        <div style="font-size:12px;color:#7f1d1d;padding:4px 0;border-bottom:1px solid #fee2e2;line-height:1.5;">• {{ $fail }}</div>
+                    @endforeach
+                </div>
+            @endif
+
+            <button onclick="document.getElementById('importSuccessModal').style.display='none'" style="width:100%;padding:13px;background:#2563eb;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;">Selesai</button>
+        </div>
+    </div>
+    @endif
+
     <section class="card" style="padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
             <div style="display: flex; gap: 12px; align-items: center;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--text);">Data Guru</h2>
                 <span style="background: rgba(59, 130, 246, 0.1); color: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">{{ count($teachers) }} Guru</span>
             </div>
             
-            <div style="display: flex; gap: 16px; align-items: center;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <div style="position: relative;">
                     <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-                    <input type="text" id="searchInput" placeholder="Cari nama guru..." style="padding: 10px 16px 10px 40px; border-radius: 8px; border: 1px solid var(--border); width: 260px; font-size: 14px; background: #fff; transition: all 0.2s;">
+                    <input type="text" id="searchInput" placeholder="Cari nama guru..." style="padding: 10px 16px 10px 40px; border-radius: 8px; border: 1px solid var(--border); width: 220px; font-size: 14px; background: #fff; transition: all 0.2s;">
                 </div>
-                <button type="button" class="btn btn-primary" onclick="openTambahGuruModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 20px;">
+                {{-- Download Template --}}
+                <a href="{{ route('admin.teachers.template') }}" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 14px;">
+                    <i class="fas fa-file-excel"></i> Template Excel
+                </a>
+                {{-- Import --}}
+                <button type="button" onclick="document.getElementById('teacherImportSection').classList.toggle('hidden')" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 14px;">
+                    <i class="fas fa-file-import"></i> Import Excel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="openTambahGuruModal()" style="display: flex; align-items: center; gap: 8px; padding: 10px 18px; font-size: 14px;">
                     <i class="fas fa-plus"></i> Tambah Guru
                 </button>
             </div>
+        </div>
+
+        {{-- Import section (hidden by default) --}}
+        <div id="teacherImportSection" class="hidden" style="margin-bottom: 20px; padding: 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;">
+            @if($errors->has('teachers_file'))
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; color: #dc2626; font-size: 14px;">
+                    <i class="fas fa-exclamation-circle"></i> {{ $errors->first('teachers_file') }}
+                </div>
+            @endif
+            <form method="POST" action="{{ route('admin.teachers.import') }}" enctype="multipart/form-data" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                @csrf
+                <input type="file" name="teachers_file" accept=".xlsx,.xls,.csv" required style="flex: 1; min-width: 250px; padding: 8px; border: 1px dashed #94a3b8; border-radius: 8px; font-size: 14px; background: #fff;">
+                <button class="btn btn-primary" type="submit" style="white-space: nowrap;"><i class="fas fa-upload"></i> Impor Sekarang</button>
+            </form>
+            <p style="margin: 8px 0 0; font-size: 12px; color: #94a3b8;">*Gunakan template Excel yang tersedia. Kolom: <strong>nama, nip, jenis_kelamin, subject</strong>. Password default otomatis = NIP (atau username).</p>
         </div>
 
         <div class="table-wrap">

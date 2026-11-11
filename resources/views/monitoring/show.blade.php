@@ -53,18 +53,22 @@
                 <div style="width:4px; height:16px; background:#22c55e; border-radius:4px;"></div>
                 <h2 style="margin:0; font-size:14px; font-weight:700; color:var(--text); letter-spacing:0.5px;">LIVE MONITORING PROGRESS MURID</h2>
             </div>
-            <div style="display:flex; align-items:center; gap:12px;">
-                <span class="status-badge active" style="font-size:11px;">
-                    <i class="fas fa-sync-alt fa-spin" style="margin-right:4px;"></i> Auto refresh 15s
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span class="status-badge active" style="font-size:11px; display:inline-flex; align-items:center; gap:5px;">
+                    <span style="width:6px; height:6px; background:#22c55e; border-radius:50%; animation:pulse 1.5s infinite;"></span>
+                    Live sync 4s
                 </span>
-                <div style="background:#eff6ff; color:#1d4ed8; font-size:13px; font-weight:700; padding:6px 12px; border-radius:99px; border:1px solid #bfdbfe;">
-                    Total Terdaftar: {{ $participants->count() }} Murid
+                <div style="background:#eff6ff; color:#1d4ed8; font-size:13px; font-weight:700; padding:6px 14px; border-radius:99px; border:1px solid #bfdbfe;">
+                    Total Terdaftar: <span id="total-count">{{ $participants->count() }}</span> Murid
                 </div>
+                <button type="button" class="btn btn-secondary" onclick="fetchLiveMonitoring(true)" style="padding:6px 14px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; cursor:pointer;">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh Sekarang
+                </button>
             </div>
         </div>
-        <table style="border:none; margin:0;">
+        <table style="border:none; margin:0;" class="hero-table">
             <thead>
-                <tr>
+                <tr style="background:#f8fafc; border-bottom:2px solid var(--border);">
                     <th style="padding-left:24px; text-align:center; width:60px;">NO</th>
                     <th style="text-align:left;">NAMA MURID</th>
                     <th>NISN</th>
@@ -72,9 +76,9 @@
                     <th style="padding-right:24px;">LOG TINDAKAN</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="monitoring-tbody">
                 @forelse($participants as $index => $participant)
-                    <tr style="border-bottom:1px solid var(--border);">
+                    <tr style="border-bottom:1px solid var(--border);" id="participant-row-{{ $participant->id }}">
                         <td style="padding-left:24px; text-align:center; color:#94a3b8; font-weight:500;">
                             {{ $index + 1 }}
                         </td>
@@ -93,7 +97,7 @@
                             @elseif($participant->finished_at)
                                 <div style="display:inline-flex; align-items:center; gap:6px; color:#16a34a; background:#f0fdf4; padding:4px 10px; border-radius:99px; font-size:12px; border:1px solid #bbf7d0;">
                                     <div style="width:6px; height:6px; background:#16a34a; border-radius:50%;"></div>
-                                    Selesai
+                                    Selesai ({{ $participant->finished_at->format('H:i') }})
                                 </div>
                             @elseif($participant->started_at)
                                 <div style="display:inline-flex; align-items:center; gap:6px; color:#2563eb; background:#eff6ff; padding:4px 10px; border-radius:99px; font-size:12px; border:1px solid #bfdbfe;">
@@ -106,12 +110,9 @@
                         </td>
                         <td style="padding-right:24px;">
                             @if($participant->is_locked)
-                                <form method="POST" action="{{ route('monitoring.unlock', $participant) }}" style="display:inline-block;">
-                                    @csrf
-                                    <button class="btn" type="submit" style="background:#f59e0b; color:#fff; font-weight:700; font-size:12px; padding:0 14px; min-height:30px; border:none;">
-                                        Buka Kunci Sesi
-                                    </button>
-                                </form>
+                                <button class="btn" type="button" onclick="unlockParticipant({{ $participant->id }}, '{{ route('monitoring.unlock', $participant) }}')" style="background:#f59e0b; color:#fff; font-weight:700; font-size:12px; padding:0 14px; min-height:30px; border:none; cursor:pointer;">
+                                    Buka Kunci Sesi
+                                </button>
                             @else
                                 <span style="color:#cbd5e1;">-</span>
                                 @if($participant->violation_count > 0)
@@ -131,9 +132,130 @@
         </table>
     </section>
 
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+    </style>
+
     <script>
-        // Auto refresh halaman setiap 15 detik untuk live update
-        setTimeout(() => location.reload(), 15000);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+        // Fetch Live Monitoring via AJAX (polling cepat tiap 4 detik)
+        let isFetching = false;
+        async function fetchLiveMonitoring(isManual = false) {
+            if (isFetching) return;
+            isFetching = true;
+
+            const icon = document.getElementById('refreshIcon');
+            if (icon && isManual) icon.classList.add('fa-spin');
+
+            try {
+                const res = await fetch(window.location.href, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.token) {
+                        const tokenEl = document.getElementById('active-token');
+                        if (tokenEl && tokenEl.textContent.trim() !== data.token) {
+                            tokenEl.textContent = data.token;
+                        }
+                    }
+                    if (data.total !== undefined) {
+                        const totalEl = document.getElementById('total-count');
+                        if (totalEl) totalEl.textContent = data.total;
+                    }
+                    if (Array.isArray(data.participants)) {
+                        renderParticipantsTable(data.participants);
+                    }
+                }
+            } catch (err) {
+                console.warn('Live monitoring poll error:', err);
+            } finally {
+                isFetching = false;
+                if (icon) icon.classList.remove('fa-spin');
+            }
+        }
+
+        function renderParticipantsTable(participants) {
+            const tbody = document.getElementById('monitoring-tbody');
+            if (!tbody) return;
+
+            if (participants.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:48px 24px; text-align:center; color:var(--text-muted);">Belum ada murid yang didaftarkan untuk ujian ini.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            participants.forEach((p, idx) => {
+                let statusHtml = '';
+                if (p.is_locked) {
+                    statusHtml = `<div style="display:inline-flex; align-items:center; gap:6px; color:#ef4444; background:#fef2f2; padding:4px 10px; border-radius:99px; font-size:12px; border:1px solid #fecaca;"><div style="width:6px; height:6px; background:#ef4444; border-radius:50%;"></div>Keluar Tab (Lock)</div>`;
+                } else if (p.finished_at) {
+                    statusHtml = `<div style="display:inline-flex; align-items:center; gap:6px; color:#16a34a; background:#f0fdf4; padding:4px 10px; border-radius:99px; font-size:12px; border:1px solid #bbf7d0;"><div style="width:6px; height:6px; background:#16a34a; border-radius:50%;"></div>Selesai (${p.finished_at})</div>`;
+                } else if (p.started_at) {
+                    statusHtml = `<div style="display:inline-flex; align-items:center; gap:6px; color:#2563eb; background:#eff6ff; padding:4px 10px; border-radius:99px; font-size:12px; border:1px solid #bfdbfe;"><div style="width:6px; height:6px; background:#2563eb; border-radius:50%;"></div>Mengerjakan</div>`;
+                } else {
+                    statusHtml = `<span style="color:#94a3b8; font-size:13px; font-weight:500;">Belum Login</span>`;
+                }
+
+                let actionHtml = '';
+                if (p.is_locked) {
+                    actionHtml = `<button class="btn" type="button" onclick="unlockParticipant(${p.id}, '${p.unlock_url}')" style="background:#f59e0b; color:#fff; font-weight:700; font-size:12px; padding:0 14px; min-height:30px; border:none; cursor:pointer;">Buka Kunci Sesi</button>`;
+                } else {
+                    actionHtml = `<span style="color:#cbd5e1;">-</span>`;
+                    if (p.violation_count > 0) {
+                        actionHtml += `<br><small style="color:#ef4444; font-size:11px; font-weight:600;">(Pernah dikunci: ${p.violation_count}x)</small>`;
+                    }
+                }
+
+                html += `
+                    <tr style="border-bottom:1px solid var(--border);" id="participant-row-${p.id}">
+                        <td style="padding-left:24px; text-align:center; color:#94a3b8; font-weight:500;">${idx + 1}</td>
+                        <td style="text-align:left; font-weight:600; color:var(--text);">${escapeHtml(p.name)}</td>
+                        <td style="color:#64748b;">${escapeHtml(p.nisn)}</td>
+                        <td style="font-weight:600;">${statusHtml}</td>
+                        <td style="padding-right:24px;">${actionHtml}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+        }
+
+        // AJAX Unlock participant
+        async function unlockParticipant(id, url) {
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+                if (res.ok) {
+                    fetchLiveMonitoring(true);
+                } else {
+                    alert('Gagal membuka kunci sesi.');
+                }
+            } catch (e) {
+                alert('Terjadi kesalahan koneksi.');
+            }
+        }
+
+        // Polling setiap 4 detik tanpa reload halaman
+        setInterval(() => fetchLiveMonitoring(false), 4000);
 
         // Generate token via AJAX
         function regenerateToken(examId) {
@@ -142,7 +264,7 @@
             fetch(`/monitoring/exams/${examId}/generate-token`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 }
             })
@@ -150,7 +272,6 @@
             .then(data => {
                 if (data.token) {
                     document.getElementById('active-token').textContent = data.token;
-                    // Flash effect
                     const tokenEl = document.getElementById('active-token');
                     tokenEl.style.color = '#22c55e';
                     setTimeout(() => tokenEl.style.color = 'var(--text)', 1000);

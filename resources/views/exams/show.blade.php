@@ -6,6 +6,18 @@
         Kembali ke Daftar Ujian
     </a>
 
+    {{-- Error / Status Alert --}}
+    @if($errors->has('exam'))
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#b91c1c; font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-exclamation-triangle"></i> {{ $errors->first('exam') }}
+        </div>
+    @endif
+    @if(session('status'))
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#15803d; font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-check-circle"></i> {{ session('status') }}
+        </div>
+    @endif
+
     {{-- Compact Header Card --}}
     <section class="card" style="padding:20px 24px;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
@@ -56,7 +68,7 @@
                     <i class="fas fa-pen-to-square"></i> Edit Ujian
                 </a>
                 <button type="button" class="btn btn-secondary" style="font-size:13px; padding:0 14px; min-height:38px;" onclick="openParticipantsModal()">
-                    <i class="fas fa-users"></i> Peserta ({{ $exam->participants->count() }})
+                    <i class="fas fa-users"></i> Peserta (<span id="participantBtnCount">{{ $exam->participants->count() }}</span>)
                 </button>
                 <button type="button" class="btn" style="background:#fee2e2; color:#b91c1c; font-size:13px; padding:0 14px; min-height:38px;" onclick="confirmGlobalDelete('{{ route('exams.destroy', $exam) }}', 'Apakah Anda yakin ingin menghapus ujian {{ addslashes($exam->title) }}?')">
                     <i class="fas fa-trash"></i>
@@ -238,9 +250,12 @@
                 if (data.success) {
                     const row = document.getElementById(`participant-row-${participantId}`);
                     if (row) row.remove();
-                    // Update count
+                    // Update count di modal dan di tombol luar
                     const countEl = document.getElementById('participantCount');
-                    countEl.textContent = parseInt(countEl.textContent) - 1;
+                    const btnCountEl = document.getElementById('participantBtnCount');
+                    const newCount = parseInt(countEl.textContent) - 1;
+                    countEl.textContent = newCount;
+                    if (btnCountEl) btnCountEl.textContent = newCount;
                 } else {
                     alert(data.error || 'Gagal menghapus peserta.');
                 }
